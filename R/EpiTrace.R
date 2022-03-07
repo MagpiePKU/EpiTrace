@@ -98,7 +98,7 @@ Init_Matrix <- function(cellname,peakname,matrix){
 #' @examples
 
 
-EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F){
+EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F,qualnum=10){
   # test
   # initiated_peaks -> peakSet
   # singleCell_Hemapoietic_dat -> matrix
@@ -202,12 +202,12 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   for (x in names(result_clock_gr_list)){
     message('add ',x)
     matrix[findOverlaps(peakSet,result_clock_gr_list[[x]])@from %>% unique,] -> mtx2
-    message('good quality cells ',sum(colSums(mtx2,na.rm=T)>=10),' and peaks ',sum(rowSums(mtx2,na.rm=T)>=10))
+    message('good quality cells ',sum(colSums(mtx2,na.rm=T)>=qualnum,),' and peaks ',sum(rowSums(mtx2,na.rm=T)>=qualnum))
     dim(mtx2) -> dimcurr
     p=0
     count = 0
     while(p==0){
-      mtx2 <- mtx2[rowSums(mtx2,na.rm=T)>=10,colSums(mtx2,na.rm=T)>=10]
+      mtx2 <- mtx2[rowSums(mtx2,na.rm=T)>=qualnum,colSums(mtx2,na.rm=T)>=qualnum]
       dim(mtx2) -> dimnext
       if((dimcurr[1]-dimnext[1])==0){
         p=1
@@ -242,7 +242,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
 
 
 
-#' RunEpiTraceAge: wrapper function for computing EpiTrace age for input Seurat object with scATAC/bulkATAC data.
+qualnum#' RunEpiTraceAge: wrapper function for computing EpiTrace age for input Seurat object with scATAC/bulkATAC data.
 #' @title RunEpiTraceAge
 #'
 #' @description wrapper function for computing EpiTrace age for input scATAC/bulkATAC data.
@@ -511,8 +511,6 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
   data.frame('locus'=names(cor_res_PT),correlation_of_EpiTraceAge=cor_res_PT,scaled_correlation_of_EpiTraceAge=scaled_cor_res_PT) -> returndf
   return(returndf)
 }
-
-
 
 
 
