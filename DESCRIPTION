@@ -1,0 +1,48 @@
+Package: EpiTrace
+Type: Package
+Title: Cell age and lineage inference from single cell ATAC data
+Version: 0.0.0.9000
+Author: Yi Zhang <synapse@pku.edu.cn>
+Maintainer: Yi Zhang <synapse@pku.edu.cn>
+Description: Inference of cell age and phylogeny from single cell ATAC data.  
+    Clock-like DNA methylation are enriched in active regulatory genomic loci which 
+    are accessible via single cell ATAC sequencing. Chromatin accessiblity on these loci 
+    are impacted by age-dependent methylation change and subjected to stable, 
+    trans-generational inheritance. The package leverages such information to:
+    1. calculate the age of a cell or a cluster of cell; 
+    2. calculate the phylogeny of cell clusters; 
+    3. define age-dependent variability of chromatin accessibility. 
+Encoding: UTF-8
+LazyData: true
+License: GPL (>= 3)
+URL: 
+Imports:
+    dplyr,
+    tidyr,
+    RColorBrewer,
+    ggplot2,
+    Seurat,
+    Signac,
+    GenomicRanges,
+    plyranges,
+    WGCNA,
+    stringr,
+    easyLift,
+    parallel,
+    sva,
+    ccaPP,
+    HiClimR,
+    nnls,
+    ggtree,
+    ape,
+    reticulate,
+    ggplot2,
+    ggpubr
+Suggests:
+    ArchR,
+    tradeSeq,
+    ChIPseeker,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+

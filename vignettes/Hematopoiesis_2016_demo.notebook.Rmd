@@ -1,0 +1,180 @@
+---
+title: "Hematopoiesis_2016_demo"
+output: html_notebook
+---
+
+In this vignette we will show you a brief guide how to run EpiTrace analysis on a demo dataset from `Corces 2016`. These demo data are from FACS-sorted pure hematopoietic cell populations and sequenced by bulk ATAC-seq. Similar code works with single cell dataset.    
+
+**Reference**:   
+Corces MR, Buenrostro JD, Wu B, Greenside PG, Chan SM, Koenig JL, Snyder MP, Pritchard JK, Kundaje A, Greenleaf WJ, Majeti R, Chang HY. Lineage-specific and single-cell chromatin accessibility charts human hematopoiesis and leukemia evolution. Nat Genet. 2016 Oct;48(10):1193-203. doi: 10.1038/ng.3646. Epub 2016 Aug 15. PMID: 27526324; PMCID: PMC5042844.  
+
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+##### Setting up the environment
+
+
+```{r setup}
+# Not run
+# library(devtools)
+# devtools::install_github('eulertx/EpiTrace') 
+
+library(EpiTrace)
+library(dplyr)
+
+```
+
+##### Loading demonstration data
+
+```{r load data}
+data("clock_gr_list")
+data("hematopoiesis.2018")
+```
+
+Generally, `clock_gr_list` is a list of GRanges each corresponds to a set of clock-like DML (clockDML) in your favourite organism. Here we provide human data in the package. You can make your own list for other organisms.  
+There are three sets of human clockDML we provides in `clock_gr_list`:  
+    *Mitosis*: 616 clock-like DML compiled from papers of `Yang et al 2016`, `Teschendorff 2020`, and `Youn and Wang 2018`.  
+    *Chronology*: 125625 clock-like DML/DMR computed from genome-wide bisulfite capture sequencing data and a compilation of 450k methyl-array data, removing the ones that overlaps with *Mitosis* dataset.   
+    *solo_WCGW*: 1669720 solitary *WCGW* motif in partial methylated domain, from `Zhou et al 2018`. 
+    
+**Reference**:   
+Zhou W, Dinh HQ, Ramjan Z, Weisenberger DJ, Nicolet CM, Shen H, Laird PW, Berman BP. DNA methylation loss in late-replicating domains is linked to mitotic cell division. Nat Genet. 2018 Apr;50(4):591-602. doi: 10.1038/s41588-018-0073-4. Epub 2018 Apr 2. PMID: 29610480; PMCID: PMC5893360.  
+Yang Z, Wong A, Kuh D, Paul DS, Rakyan VK, Leslie RD, Zheng SC, Widschwendter M, Beck S, Teschendorff AE. Correlation of an epigenetic mitotic clock with cancer risk. Genome Biol. 2016 Oct 3;17(1):205. doi: 10.1186/s13059-016-1064-3. PMID: 27716309; PMCID: PMC5046977.  
+Teschendorff AE. A comparison of epigenetic mitotic-like clocks for cancer risk prediction. Genome Med. 2020 Jun 24;12(1):56. doi: 10.1186/s13073-020-00752-3. PMID: 32580750; PMCID: PMC7315560.  
+Youn A, Wang S. The MiAge Calculator: a DNA methylation-based mitotic age calculator of human tissue types. Epigenetics. 2018;13(2):192-206. doi: 10.1080/15592294.2017.1389361. Epub 2018 Feb 6. PMID: 29160179; PMCID: PMC5873367.  
+Horvath S. DNA methylation age of human tissues and cell types. Genome Biol. 2013;14(10):R115. doi: 10.1186/gb-2013-14-10-r115. Erratum in: Genome Biol. 2015;16:96. PMID: 24138928; PMCID: PMC4015143.  
+
+
+```{r 0.1}
+names(clock_gr_list)
+head(clock_gr_list[['Mitosis']])
+```
+
+##### Step 1. Initialize peak sets
+
+Peak sets are the annotation of ATAC peaks in your input dataset. Either a dataframe with columns `chr`,`start`,`end` or a GRanges object is fine. Here we provide you with an example GRanges. Initaliztion of peak sets is necessary for following steps.   
+
+```{r initiate peak sets}
+initiated_peaks <- Init_Peakset(inputpeak) 
+head(initiated_peaks)
+```
+
+##### Step 2. Prepare EpiTrace object 
+
+Use `EpiTrace_prepare_object` to prepare the `Seurat` object which is built by `Signac` for following usage. Basically we need two input data at minimal: the peakset and the input count matrix.   
+
+Input count matrix, a row(peaks)_x_col(cells) matrix of reads, could be re-generated from ArchR or Signac.   
+
+Please note that reference genome have to be set here. Currently we have support `hg19` and `hg38` because we have only provided human clockDML datasets. If you use a non-human dataset, you have to set the `non_standard_clock` option to `TRUE` and give your own `clock_gr_list`, which is a list of GRanges each corresponds to a set of clockDML in your favourite organism.   
+
+**NOTE** consistency between ref_genome, initiated_peaks, and the given clockDML is essential.  
+
+This results in a Seurat object of your input matrix and peaks.  
+
+```{r prepare epitrace object}
+epitrace_obj <- EpiTrace_prepare_object(initiated_peaks,inputmatrix,cell_metadata$celltype,ref_genome = 'hg19',non_standard_clock = F,clock_gr_list = clock_gr_list)
+epitrace_obj
+```
+##### Step 3. Calculate EpiTrace Age  
+
+We pass the prepared epitrace object to estimate age using `RunEpiTraceAge` command.   
+
+This would add several columns into the meta.data slot of the resulting Seurat object, corresponding to cell age determined by EpiTrace. Generally, early-generated cells are with longer (larger) age estimate, and late-generated cells are with shorter (smaller) age estimate.   
+
+```{r estimate epitrace age}
+library(ggplot2)
+epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj)
+ggplot(epitrace_obj_age_estimated@meta.data,aes(x=EpiTraceAge_Mitotic,y=celltype)) + geom_boxplot() + theme_classic() 
+```
+##### Step 4. Compute the phylogenetic tree based on EpiTrace  
+
+We pass the prepared epitrace object to estimate per-cell-cluster phylogenetic tree using `RunEpiTracePhylogeny` command.   
+
+This generates a list which contains the `assay` (id of assay), `tree` (phylogenetic tree of the clusters), `tree_plot` (a ggtree object).   
+
+If you would like to use other clustering of cells (say, single cell) you have to change the `Idents` of the object. Currently we tend to suggest use well annotated single cell clusters (or in this demo case, known FACS-sorted cell types). 
+
+```{r estimate phylogenetic tree}
+phylotree_res <- RunEpiTracePhylogeny(epitrace_obj_age_estimated)
+```
+
+We can root the phylogenetic tree with known start (in this case, `HSC`) and re-draw the tree.  
+
+```{r new root}
+
+mitosis_tree <- phylotree_res[['MitosisClock']][[2]]
+mitosis_tree <- ape::root(mitosis_tree,outgroup='HSC')
+plot(mitosis_tree)
+
+```
+
+We can, of course, run a sub-analysis on a lineage of cells.    
+
+
+```{r estimate phylogenetic tree sublineag}
+phylotree_res_myeloid <- RunEpiTracePhylogeny(subset(epitrace_obj_age_estimated,celltype %in% c('HSC','MPP','CMP','GMP','Monocyte')))
+mitosis_tree_myeloid <- phylotree_res_myeloid[['ChronologyClock']][[2]]
+mitosis_tree_myeloid <- ape::root(mitosis_tree_myeloid,outgroup='HSC')
+plot(mitosis_tree_myeloid)
+```
+##### Step 5. Compute association between regulatory region accessibility and cell age.  
+
+We pass the age-estimated object to `AssociationOfPeaksToAge` function to compute association result.  
+
+Note that association is most meaningful for a sub-population.  
+
+```{r perform association test}
+associated_res_HSC <- AssociationOfPeaksToAge(subset(epitrace_obj_age_estimated,celltype %in% 'HSC'))
+head(associated_res_HSC)
+```
+
+Age-associated regulatory regions are regions whose accessibility is strongly correlated with sample/cell age. We annotate the regions and make an example of finding EZH2, which is reported to strongly regulate HSC senescence (`Kamminga et al 2006`, `Ito et al 2018`), is strongly associated with long age in our data. On the contrary, short age (late-derived) is associated with CDK2AP1, PABIR1 and TRIM27, all of which are reported to reduce stem cell self-renewal and are related to the so called "aged phenotype". 
+
+**Reference**:   
+Kamminga LM, Bystrykh LV, de Boer A, Houwer S, Douma J, Weersing E, Dontje B, de Haan G. The Polycomb group gene Ezh2 prevents hematopoietic stem cell exhaustion. Blood. 2006 Mar 1;107(5):2170-9. doi: 10.1182/blood-2005-09-3585. Epub 2005 Nov 17. PMID: 16293602; PMCID: PMC1895717.    
+Ito T, Teo YV, Evans SA, Neretti N, Sedivy JM. Regulation of Cellular Senescence by Polycomb Chromatin Modifiers through Distinct DNA Damage- and Histone Methylation-Dependent Pathways. Cell Rep. 2018 Mar 27;22(13):3480-3492. doi: 10.1016/j.celrep.2018.03.002. PMID: 29590617; PMCID: PMC5915310.
+Deshpande AM, Dai YS, Kim Y, Kim J, Kimlin L, Gao K, Wong DT. Cdk2ap1 is required for epigenetic silencing of Oct4 during murine embryonic stem cell differentiation. J Biol Chem. 2009 Mar 6;284(10):6043-7. doi: 10.1074/jbc.C800158200. Epub 2008 Dec 31. PMID: 19117947; PMCID: PMC2649091.  
+Maat H, Atsma TJ, Hogeling SM, Rodríguez López A, Jaques J, Olthuis M, de Vries MP, Gravesteijn C, Brouwers-Vos AZ, van der Meer N, Datema S, Salzbrunn J, Huls G, Baas R, Martens JHA, van den Boom V, Schuringa JJ. The USP7-TRIM27 axis mediates non-canonical PRC1.1 function and is a druggable target in leukemia. iScience. 2021 Apr 16;24(5):102435. doi: 10.1016/j.isci.2021.102435. PMID: 34113809; PMCID: PMC8169803.  
+
+
+```{r annotation of regulatory regions to genes}
+
+library(ChIPseeker)
+library(tradeSeq)
+library(ggplot2)
+library(ggtree)
+library(clusterProfiler)
+library(dplyr)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(org.Hs.eg.db)
+library(tidyr)
+library(reshape2)
+
+txdb = TxDb.Hsapiens.UCSC.hg19.knownGene
+associated_res_HSC <- separate(associated_res_HSC,col='locus',into=c('chr','start','end'),remove=F,convert=T)
+associated_res_HSC_gr <- makeGRangesFromDataFrame(associated_res_HSC)
+
+findOverlaps(associated_res_HSC_gr,plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])))@from %>% unique -> peaks_overlap_with_clock
+associated_res_HSC_gr$locus_type <- 'Others'
+associated_res_HSC_gr$locus_type[peaks_overlap_with_clock] <- 'Clock-like DML'
+
+
+annotatePeak(associated_res_HSC_gr, tssRegion=c(-1000, 500), TxDb=txdb,addFlankGeneInfo=F, flankDistance=50000,annoDb = "org.Hs.eg.db") -> associated_res_HSC_gr_anno 
+
+as.data.frame(associated_res_HSC_gr_anno@anno) -> associated_res_HSC_gr_anno_df
+cbind(associated_res_HSC,associated_res_HSC_gr_anno_df %>% dplyr::select(SYMBOL,distanceToTSS,annotation,locus_type) ) -> associated_res_HSC
+associated_res_HSC$promoter_scaled_cor <- NA
+associated_res_HSC$promoter_scaled_cor[grepl('Promoter',associated_res_HSC$annotation)] <- scale(associated_res_HSC$correlation_of_EpiTraceAge[grepl('Promoter',associated_res_HSC$annotation)])
+associated_res_HSC[associated_res_HSC$promoter_scaled_cor>3 & !is.na(associated_res_HSC$promoter_scaled_cor),] %>% arrange(promoter_scaled_cor) %>% dplyr::select(promoter_scaled_cor,distanceToTSS,SYMBOL,locus_type)
+associated_res_HSC[associated_res_HSC$promoter_scaled_cor < -2 & !is.na(associated_res_HSC$promoter_scaled_cor),] %>% arrange(promoter_scaled_cor) %>% dplyr::select(promoter_scaled_cor,distanceToTSS,SYMBOL,locus_type)
+
+```
+
+
