@@ -320,21 +320,23 @@ RunEpiTracePhylogeny <- function(epitrace_object,min.cutoff=50,run_reduction=T){
   color_celltype <- grDevices::colorRampPalette(colors = RColorBrewer::brewer.pal(9,"Set1"))(length(unique(Idents(epitrace_object))))
   names(color_celltype) <- unique(Idents(epitrace_object))
   lapply(availableAssays,function(assayid){
-    if(DefaultAssay(epitrace_object) != assayid){
-      DefaultAssay(epitrace_object) <- assayid
-      if(run_reduction==T){
-        epitrace_object <- Signac::RunTFIDF(epitrace_object)
-        epitrace_object <- Signac::FindTopFeatures(epitrace_object, min.cutoff = min.cutoff)
-        epitrace_object <- Signac::RunSVD(epitrace_object)
+    tryCatch({
+      if(DefaultAssay(epitrace_object) != assayid){
+        DefaultAssay(epitrace_object) <- assayid
+        if(run_reduction==T){
+          epitrace_object <- Signac::RunTFIDF(epitrace_object)
+          epitrace_object <- Signac::FindTopFeatures(epitrace_object, min.cutoff = min.cutoff)
+          epitrace_object <- Signac::RunSVD(epitrace_object)
+        }
       }
-    }
-    obj_clock <- BuildClusterTree(object = epitrace_object,verbose = T,assay = assayid)
-    data.tree_clock <- Tool(object = obj_clock, slot = "BuildClusterTree")
-    ggtree::ggtree(data.tree_clock,layout='rectangular',ladderize = FALSE)  + geom_tiplab(aes(color=label),size=5,offset=10) + scale_color_manual(values=color_celltype)  -> tree_plot_clock
-    xmax <- (tree_plot_clock$data$`branch.length` %>% max(na.rm=T)) * 1.4
-    tree_plot_clock <- tree_plot_clock + xlim(c(NA,xmax))
-    result <- list(assay=assayid,tree=data.tree_clock,tree_plot=tree_plot_clock)
-    return(result)
+      obj_clock <- BuildClusterTree(object = epitrace_object,verbose = T,assay = assayid)
+      data.tree_clock <- Tool(object = obj_clock, slot = "BuildClusterTree")
+      ggtree::ggtree(data.tree_clock,layout='rectangular',ladderize = FALSE)  + geom_tiplab(aes(color=label),size=5,offset=10) + scale_color_manual(values=color_celltype)  -> tree_plot_clock
+      xmax <- (tree_plot_clock$data$`branch.length` %>% max(na.rm=T)) * 1.4
+      tree_plot_clock <- tree_plot_clock + xlim(c(NA,xmax))
+      result <- list(assay=assayid,tree=data.tree_clock,tree_plot=tree_plot_clock)
+      return(result)
+    },error=function(e){message('failed for ',assayid)})
   }) -> returnlist
   names(returnlist) <- availableAssays
   return(returnlist)
