@@ -163,7 +163,9 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
     peakSet <- peakSet[!logical_peak_vec,]
     matrix <- matrix[!logical_peak_vec,]
   }
-  names(celltype) <- colnames(matrix)
+  if(!is.null(celltype)){
+    names(celltype) <- colnames(matrix)
+  }
 
 
   # 1. prepare Clock region intersection to input peak set.
@@ -507,6 +509,7 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
   data.frame('locus'=names(cor_res_PT),correlation_of_EpiTraceAge=cor_res_PT,scaled_correlation_of_EpiTraceAge=scaled_cor_res_PT) -> returndf
   return(returndf)
 }
+
 
 
 
