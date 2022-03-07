@@ -282,7 +282,7 @@ RunEpiTraceAge <- function(epitrace_object){
   for (x in names(res_list)){
     count = count + 1
     res_list[[x]] -> df1
-    colnames(df1)[2:3] <- paste0(c('EpiTraceAge_','Accessibility_'),x)
+    colnames(df1)[2:4] <- paste0(c('EpiTraceAge_','Accessibility_','AccessibilitySmooth_'),x)
     if(count == 1){
       returndf = df1
     }else{
