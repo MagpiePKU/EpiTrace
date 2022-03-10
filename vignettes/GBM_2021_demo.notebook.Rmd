@@ -1,0 +1,315 @@
+---
+title: "GBM Demo Notebook"
+output: html_notebook
+---
+
+##### Zhang Yi <synapse@pku.edu.cn>
+##### 20220308
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Introduction
+
+In this vignette we show EpiTrace age application to scATAC of a cancer sample. Data is from NCBI GEO `GSE139136`.   
+
+**Reference**  
+Guilhamon P, Chesnelong C, Kushida MM, Nikolic A et al. Single-cell chromatin accessibility profiling of glioblastoma identifies an invasive cancer stem cell population associated with lower survival. Elife 2021 Jan 11;10. PMID: 33427645  
+Nikolic A, Singhal D, Ellestad K, Johnston M et al. Copy-scAT: Deconvoluting single-cell chromatin accessibility of genetic subclones in cancer. Sci Adv 2021 Oct 15;7(42):eabg6045. PMID: 34644115  
+
+#### Data loading 
+
+First we load the data via:  
+
+```{r cars}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(GenomicRanges)
+library(reshape2)
+library(openxlsx)
+library(ggplot2)
+library(Matrix)
+library(EpiTrace)
+library(Seurat)
+library(SeuratObject)
+library(ggtree)
+library(EnsDb.Hsapiens.v86)
+library(patchwork)
+library(ArchR)
+
+data("clock_gr_list")
+load('/Users/wing/Desktop/Eulerian/文件/内部研发项目/CLOCK_CANCER/Clock_Evolution/data/scGBM/GBM_GSM4131779.testdata.RData') # this is hg38
+setwd('/Users/wing/Desktop/Eulerian/文件/内部研发项目/CLOCK_CANCER/Clock_Evolution/')
+
+```
+  
+We have already processed the data into MatrixMarket format. 
+
+
+#### Creating the EpiTrace object  
+
+We prepare the peak-set and count matrix using `Init_Peakset` and `Init_Matrix`.   
+
+
+
+```{r creating object }
+
+GBM_GSM4131779$GR -> peakset
+initiated_peaks <- Init_Peakset(peakset) 
+initiated_mm <- Init_Matrix(cellname = colnames(GBM_GSM4131779$MM),peakname = gsub('_','-',rownames(GBM_GSM4131779$MM)),matrix = GBM_GSM4131779$MM)
+epitrace_obj <- EpiTrace_prepare_object(initiated_peaks,initiated_mm,ref_genome = 'hg38',non_standard_clock = F,clock_gr_list = clock_gr_list,qualnum=1)
+DefaultAssay(epitrace_obj) <- 'peaks'
+```
+
+#### Basic pre-processing
+
+The object could be re-clustered and re-analyzed. Here, we re-cluster it to a higher resolution, and try to remove some low-quality cells which tend to scatter across the UMAP space. 
+
+
+
+
+```{r re-engage with clustering}
+library(Signac)
+epitrace_obj <- epitrace_obj %>% Signac::RunTFIDF() %>% Signac::FindTopFeatures(min.cutoff=50) %>% Signac::RunSVD() %>% RunUMAP(reduction = 'lsi', dims = 2:31) %>% FindNeighbors(reduction = 'lsi', dims = 2:31,k.param = 21) %>% FindClusters(verbose = FALSE, algorithm = 3,resolution = 0.8)
+epitrace_obj_backup <- epitrace_obj
+epitrace_obj <- subset(epitrace_obj,seurat_clusters %ni% c('2','8'))
+
+```
+
+#### Estimate age and phylogeny  
+
+We estimate the EpiTrace age, and phylogeny based on EpiTrace age, by using the `RunEpiTraceAge` and `RunEpiTracePhylogeny` commands.    
+
+```{r estimate age and phylogeny}
+
+epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj)
+phylotree_res <- RunEpiTracePhylogeny(epitrace_obj_age_estimated,run_reduction = T)
+
+```
+
+#### Add annotation for gene expression
+
+Gene expression could usually be pulled out by Signac. However, the data we downloaded did not provide with a `fragments` file so we used peaks overlapping given gene instead. This is approximate, though imperfect, for visulization. However the result is visually similar to publication. Here we tested MDM4, EGFR and PDGFRA, which are known to be amplified in the sample.      
+
+```{r add annotation and annotate gene expression alongside EpiTrace age}
+
+annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevelsStyle(annotations) <- 'UCSC'
+genome(annotations) <- "hg38"
+
+target_genes <- c('MDM4','EGFR','PDGFRA')
+granges(epitrace_obj_age_estimated) -> tempdf_GR
+lapply(target_genes,function(x){
+  if(x %in% 'PDGFRA'){
+    widthid = 10000
+  }else{
+    widthid = 300
+  }
+  tempdf_GR[findOverlaps(tempdf_GR,flank(annotations[annotations$gene_name %in% x,],width=widthid,both=T))@from %>% unique,] -> testdf
+  testdf$gene <- x
+  testdf <- as.data.frame(testdf)
+  testdf
+}) %>% bind_rows -> testdf 
+testdf$target_feature <- paste0(testdf$seqnames,'-',testdf$start,'-',testdf$end)
+lapply(target_genes,function(x){
+  testdf$target_feature[testdf$gene %in% x]
+}) -> featurelist 
+names(featurelist) <- target_genes
+
+Seurat::AddModuleScore(epitrace_obj_age_estimated,features = featurelist) -> epitrace_obj_age_estimated
+colnames(epitrace_obj_age_estimated@meta.data)[((ncol(epitrace_obj_age_estimated@meta.data)-2):ncol(epitrace_obj_age_estimated@meta.data))] <- target_genes
+
+FeaturePlot(epitrace_obj_age_estimated,features = c('EpiTraceAge_AllClock',target_genes),order = T,ncol = 4,combine = F) -> gene_plot_list 
+
+epitrace_obj_age_estimated@meta.data %>% dplyr::group_by(seurat_clusters) %>% dplyr::summarise(n=mean(EpiTraceAge_AllClock,na.rm = T),v=var(EpiTraceAge_AllClock,na.rm = T),med=median(EpiTraceAge_AllClock,na.rm = T)) %>% arrange(med) -> df1
+epitrace_obj_age_estimated@meta.data$seurat_clusters  <- factor(epitrace_obj_age_estimated@meta.data$seurat_clusters,levels=rev(c(3,0,5,6,4,7,9,1)),ordered=T)
+Idents(epitrace_obj_age_estimated) <- epitrace_obj_age_estimated$seurat_clusters
+                                                              
+
+phylotree_res[[4]][[2]] -> data.tree_clock
+data.tree_clock <- ape::root(data.tree_clock,outgroup='1')
+colors_plot <- colorRampPalette(colors=RColorBrewer::brewer.pal(n=9,name = 'Set1'))(length(unique(epitrace_obj_age_estimated$seurat_clusters)))
+names(colors_plot) <- unique(epitrace_obj_age_estimated$seurat_clusters)
+
+p2_tree <- ggtree::ggtree(data.tree_clock,layout='rectangular',ladderize = FALSE)  + geom_tippoint(aes(color = label),size=5) + scale_color_manual(values = colors_plot) +  geom_tiplab(color='black',size=10,offset=10) + theme(legend.position='none') 
+
+phylotree_res[[1]][[2]] -> data.tree_mvg
+data.tree_mvg <- ape::root(data.tree_mvg,outgroup='1')
+colors_plot <- colorRampPalette(colors=RColorBrewer::brewer.pal(n=9,name = 'Set1'))(length(unique(epitrace_obj_age_estimated$seurat_clusters)))
+names(colors_plot) <- unique(epitrace_obj_age_estimated$seurat_clusters)
+
+p_tree_mvg <- ggtree::ggtree(data.tree_mvg,layout='rectangular',ladderize = FALSE)  + geom_tippoint(aes(color = label),size=5) + scale_color_manual(values = colors_plot) +  geom_tiplab(color='black',size=10,offset=10) + theme(legend.position='none')
+ 
+DimPlot(epitrace_obj_age_estimated,label = T)  -> p1
+p1$data %>% dplyr::group_by(ident) %>% dplyr::summarise(UMAP_1=mean(UMAP_1),UMAP_2=mean(UMAP_2)) -> p1_loc
+ggplot(p1$data,aes(x=UMAP_1,y=UMAP_2,color=ident)) + geom_point() + theme_classic() + scale_color_manual(values = colors_plot) + theme(legend.position = 'none') -> p1
+p1 <- p1 + geom_label(data=p1_loc,mapping=aes(x=UMAP_1,y=UMAP_2,label=ident),fill='white',color='black')
+
+color_use <- c('coral','chartreuse4','cornflowerblue','red')
+lapply(1:length(gene_plot_list),function(idx){
+  gene_plot_list[[idx]]$data -> pdata 
+gene_plot_list[[idx]]$labels$title -> ptitle
+if(idx==1){
+  ptitle <- 'Clock'
+}
+pdata$newvalue <- pdata$value <- pdata[,ncol(pdata)]
+pdata$newvalue[pdata$value > quantile(pdata$value,seq(0,1,0.1))[6]] <- 1
+pdata$newvalue[pdata$value <= quantile(pdata$value,seq(0,1,0.1))[6]] <- 0
+if(idx == 4){
+  pdata$newvalue[pdata$value <= quantile(pdata$value,seq(0,1,0.01))[94]] <- 0
+}
+pdata <- arrange(pdata,newvalue)
+ggplot(pdata,aes(x=UMAP_1,y=UMAP_2,color=factor(newvalue))) + scale_color_manual(values=c('beige',color_use[idx])) + geom_point(size=0.5) + theme_classic() + ggtitle(ptitle) + theme(legend.position = 'none',text=element_text(size=20))
+}) -> final_gene_exp_umap_list 
+
+lapply(1:length(gene_plot_list),function(idx){
+  gene_plot_list[[idx]]$data -> pdata 
+gene_plot_list[[idx]]$labels$title -> ptitle
+if(idx==1){
+  ptitle <- 'Clock'
+}
+if(idx==1){
+  xlabel <- 'EpiTrace Age'
+}else{
+  xlabel <- 'Expression'
+}
+pdata$newvalue <- pdata$value <- pdata[,ncol(pdata)]
+pdata$ident <- factor(pdata$ident,levels=levels(epitrace_obj_age_estimated@meta.data$seurat_clusters),ordered = T)
+ggplot(pdata,aes(x=value,y=ident,fill=ident,group=ident)) + geom_violin(aes(fill=ident),scale='width') + theme_classic() + scale_fill_manual(values = colors_plot) +geom_boxplot(fill='black',width=0.2,outlier.alpha = 0) + theme(legend.position = 'none',axis.title.y = element_blank(),axis.text.x=element_blank(),text=element_text(size=20)) + ggtitle(ptitle) + xlab(xlabel)
+}) -> final_gene_exp_violin_list 
+
+p1 <- p1 + theme(text=element_text(size=20))
+
+# Printing
+
+# pdf('Plots/GBM_GSM4131779.pdf',height=11,width=13)
+# print(
+# (
+# (p1|p2_tree+theme(legend.position = 'none')+theme(text = element_text(size=20)))/
+#     (wrap_plots(final_gene_exp_umap_list,ncol=2) | wrap_plots(final_gene_exp_violin_list,ncol=2))
+# ) + plot_layout(tag_level = 'new') + plot_annotation(tag_levels = 'A')
+# )
+# dev.off() 
+# 
+# 
+# pdf('Plots/GBM_GSM4131779.Tree.Compare.pdf',height=4,width=13)
+# print(
+# (p2_tree + ggtitle('EpiTrace') + theme(text=element_text(size=30)))| (p_tree_mvg + ggtitle('MVG')+ theme(text=element_text(size=30)))
+# )
+# dev.off() 
+
+
+
+```
+
+EpiTrace age analysis revealed accelerated aging (long-lived, multiple mitotic event) in malignant cells which perfectly matched MDM4 amplification. It also shows the clonal origin of PDGFRA+ population with simutaneous loss of EGFR amplification. Furthermore, a tiny cluster (#7) -- as a **pre-malignant** state -- is of higher cell age, and contains MDM4 amplification to a lesser extent.   
+
+Importantly, the lineage tree built by genome-wide peak similarity (that is, by default Signac high variable peaks) scattered the two MDM4-high-amplified clusters 0 and 3 into two different branches. The mis-placement is fixed in EpiTrace tree.   
+
+
+```{r figure 1,fig.height=6,fig.width=7}
+(
+(p1|p2_tree+theme(legend.position = 'none')+theme(text = element_text(size=20)))/
+    (wrap_plots(final_gene_exp_umap_list,ncol=2) | wrap_plots(final_gene_exp_violin_list,ncol=2))
+) + plot_layout(tag_level = 'new') + plot_annotation(tag_levels = 'A')
+
+
+```
+
+```{r figure 2,fig.height=2,fig.width=7}
+(
+(p2_tree + ggtitle('EpiTrace') + theme(text=element_text(size=30)))| (p_tree_mvg + ggtitle('MVG')+ theme(text=element_text(size=30)))
+)
+```
+
+# test the origin of EGFR+, MDM4+, PDGFRA+ clones
+
+
+```{r clonal origin,fig.height=6,fig.width=2.5}
+
+# 
+# ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$seurat_clusters%in%c(4,5,6,0,3),],aes(x=PDGFRA,y=EGFR)) + geom_point(aes(color=seurat_clusters)) + scale_color_manual(values = colors_plot) + theme_bw()  + facet_wrap(~seurat_clusters) + geom_hline(yintercept = 0) + geom_vline(xintercept = 0.01)
+# 
+# ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$seurat_clusters%in%c(4,5,6,0,3),],aes(x=EpiTraceAge_ChronologyClock,y=EGFR)) + geom_point(aes(color=seurat_clusters)) + scale_color_manual(values = colors_plot) + theme_bw()  + facet_wrap(~seurat_clusters)
+
+
+lapply(c(3,0,5,6,4),function(clusterid){
+  ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$seurat_clusters%in%clusterid,],aes(x=PDGFRA,y=EGFR)) + geom_point(aes(color=seurat_clusters),alpha=0.6) + scale_color_manual(values = colors_plot) + theme_bw() + theme(legend.position = 'none') + ggtitle(paste0('Cluster ',clusterid, ' Scatter')) + xlim(c(-0.2,1.4)) + ylim(c(-0.15,0.4)) + geom_hline(yintercept = 0) + geom_vline(xintercept = 0.05) -> p1
+  ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$seurat_clusters%in% clusterid,],aes(x=EpiTraceAge_AllClock,y=EGFR))  + scale_color_manual(values = colors_plot) + theme_bw()  + geom_smooth(data=epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$seurat_clusters%in%c(5,6) & epitrace_obj_age_estimated@meta.data$EGFR>= -0.08,],mapping=aes(),color='red')  + geom_smooth(data=epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$seurat_clusters%in%c(5,6) & epitrace_obj_age_estimated@meta.data$EGFR <= -0.05,],mapping=aes(),color='black') + geom_point(alpha=0.5,aes(color=seurat_clusters)) + ylim(c(-0.15,0.4)) + xlim(c(0.2,1)) + theme(legend.position = 'none') + ggtitle(paste0('Age vs EGFR')) + xlab('Chronological Age')  -> p2
+  return(wrap_plots(list(p1,p2),nrow=1))
+}) -> t1
+
+t1 %>% wrap_plots(nrow=5)
+
+
+
+
+```
+
+
+
+#### Insert pie charts to show the evolutionarily relationship
+
+
+```{r pie chart}
+library(ggtree)
+library(reshape2)
+library(ggplot2)
+library(magick)
+library(treeio)
+
+p <- p2_tree
+
+p$data %>% dplyr::select(node,label) -> node_label_df
+
+epitrace_obj_age_estimated@meta.data -> prepare_data_meta 
+prepare_data_meta$label <- prepare_data_meta$seurat_clusters
+prepare_data_meta %>% dplyr::group_by(label) %>% dplyr::summarise(Normal=sum(EpiTraceAge_MitosisClock<0.3),MDM4_amp=sum(MDM4>-0.1),EGFR=sum(EGFR>0 ),PDGFRA=sum(PDGFRA>0.05),n=n()) 
+
+prepare_data_meta%>%dplyr::select(EpiTraceAge_MitosisClock,MDM4,PDGFRA,EGFR) %>% dist %>% hclust() %>% cutree(5) -> prepare_data_meta$hdist_class
+table(prepare_data_meta$hdist_class,prepare_data_meta$seurat_clusters)
+prepare_data_meta %>% dplyr::group_by(hdist_class) %>% dplyr::summarise(age=mean(EpiTraceAge_MitosisClock,na.rm=T),EGFR=mean(EGFR),PDGFRA=mean(PDGFRA),MDM4=mean(MDM4)) 
+
+prepare_data_meta$manual_class <- 'Normal'
+prepare_data_meta$manual_class[prepare_data_meta$MDM4 > -0.1] <- 'MDM4+'
+prepare_data_meta$manual_class[prepare_data_meta$EGFR > 0 & prepare_data_meta$MDM4 > -0.1] <- 'EGFR+'
+prepare_data_meta$manual_class[prepare_data_meta$PDGFRA > 0.1 & prepare_data_meta$MDM4 > -0.1] <- 'PDGFRA+'
+prepare_data_meta$manual_class[prepare_data_meta$PDGFRA > 0.1 & prepare_data_meta$EGFR > 0 & prepare_data_meta$MDM4 > -0.1] <- 'EGFR+ PDGFRA+'
+
+prepare_data_meta$manual_class <- factor(prepare_data_meta$manual_class,levels=c('Normal','MDM4+','EGFR+ PDGFRA+','EGFR+','PDGFRA+'))
+
+left_join(prepare_data_meta%>%dplyr::group_by(seurat_clusters) %>% dplyr::summarise(n_class=n()),prepare_data_meta%>%dplyr::group_by(manual_class,seurat_clusters) %>% dplyr::summarise(n_sub_class=n())) -> df1
+df1$freq <- df1$n_sub_class/df1$n_class 
+df1$label <- df1$seurat_clusters
+
+
+colors_pie = c('Normal'='white','MDM4+'='gray','EGFR+ PDGFRA+'='orange','EGFR+'='red','PDGFRA+'='black')
+
+## create list to hold all pie charts
+pies = list()
+for (i in c(na.omit(p$data)$node) ) {
+  ## create a ggplot object for each pie chart
+  labelid <- p$data$label[p$data$node%in%i] %>% unique() 
+  pies[[i]] =  ggplot(df1[df1$label %in% labelid,], aes(y = freq, fill = manual_class, x="")) + 
+    geom_bar(stat = "identity",color='black',size=0.5) +
+    coord_polar("y", start=0) +
+    theme_void() + scale_fill_manual(values=colors_pie) + theme(legend.position='none')
+}
+# give them the appropriate names and plot on tree
+names(pies) = c(na.omit(p$data)$node) 
+p+geom_inset(pies,x='node',width=0.17, height=0.17,hjust = -40) + xlim(c(NA,p$data$x%>%max(na.rm=T)*1.4)) 
+
+prepare_data_meta %>% dplyr::group_by(seurat_clusters,manual_class) %>% dplyr::summarise(meanAge=mean(EpiTraceAge_MitosisClock))
+
+
+ggplot(prepare_data_meta,aes(x=EpiTraceAge_MitosisClock,y=manual_class)) + geom_violin(aes(fill=manual_class),scale='width') + theme_classic() + geom_boxplot(fill='darkgray',outlier.alpha = 0,width=0.1) + scale_fill_manual(values=colors_pie) + theme(axis.title.y = element_blank(),text=element_text(size=15)) + xlab('MitosisClock')
+
+```
+
+
+
+
+

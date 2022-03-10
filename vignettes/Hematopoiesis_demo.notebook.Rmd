@@ -1,6 +1,8 @@
 ---
 title: "Hematopoiesis_2016_demo"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ##### Zhang Yi <synapse@pku.edu.cn>

@@ -1,0 +1,168 @@
+---
+title: "Embryonic development demo Notebook"
+output: html_notebook
+---
+
+
+##### Zhang Yi <synapse@pku.edu.cn>
+##### 20220308
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Introduction
+
+In this vignette we show EpiTrace age application to scATAC of human embryonic development scATAC/LiCAT-seq sample. Data is from NCBI SRA and in-house.   
+
+**Reference**  
+Wu J, Xu J, Liu B, Yao G, Wang P, Lin Z, Huang B, Wang X, Li T, Shi S, Zhang N, Duan F, Ming J, Zhang X, Niu W, Song W, Jin H, Guo Y, Dai S, Hu L, Fang L, Wang Q, Li Y, Li W, Na J, Xie W, Sun Y. Chromatin analysis in human early development reveals epigenetic transition during ZGA. Nature. 2018 May;557(7704):256-260. doi: 10.1038/s41586-018-0080-8. Epub 2018 May 2. Erratum in: Nature. 2018 Aug;560(7718):E27. PMID: 29720659.  
+Liu L, Leng L, Liu C, Lu C, Yuan Y, Wu L, Gong F, Zhang S, Wei X, Wang M, Zhao L, Hu L, Wang J, Yang H, Zhu S, Chen F, Lu G, Shang Z, Lin G. An integrated chromatin accessibility and transcriptome landscape of human pre-implantation embryos. Nat Commun. 2019 Jan 21;10(1):364. doi: 10.1038/s41467-018-08244-0. PMID: 30664750; PMCID: PMC6341076.  
+Wei He, Yuan Wei, Xiaoli Gong, Luyuan Chang, Wan Jin, Ke Liu, Xinghuan Wang, Yu Xiao, Wenjing Zhang, Qiong Chen, Kai Wu, Lili Liang, Jia Liu, Yawen Chen, Huanhuan Guo, Wenhao Chen, Jiexia Yang, Yiming Qi, Wei Dong, Meng Fu, Xiaojuan Li, Jiusi Liu, Yi Zhang, Aihua Yin. Developmentally Delayed Epigenetic Reprogramming Underlying the Pathogenesis of Preeclampsia. bioRxiv 2020.05.08.085290; doi: https://doi.org/10.1101/2020.05.08.085290  
+
+#### Data loading 
+
+First we load the data via:  
+
+```{r cars}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(GenomicRanges)
+library(reshape2)
+library(openxlsx)
+library(ggplot2)
+library(Matrix)
+library(EpiTrace)
+library(Seurat)
+library(SeuratObject)
+library(ggtree)
+library(EnsDb.Hsapiens.v86)
+library(patchwork)
+library(ArchR)
+library(Signac)
+rm(list=ls())
+data("clock_gr_list")
+load('/Users/wing/Desktop/Eulerian/文件/内部研发项目/CLOCK_CANCER/Clock_Evolution/data/scATAC_human_embryo/embryo_human_scATAC.raw.Rdata') # this is hg19
+load('/Users/wing/Desktop/Eulerian/文件/内部研发项目/CLOCK_CANCER/Clock_Evolution/data/scATAC_human_embryo/embryo_human_scATAC.raw.coverage.Rdata')
+
+```
+  
+We have already processed the data into several data.frames : 
+    phenoData, a data set containing meta-data of the cells
+    featureData, a data set containining meta-data of the peaks
+    coverage_mat_wide, the count matrix (with additional 'origin' column)
+  
+
+#### Creating the EpiTrace object  
+
+We prepare the peak-set and count matrix using `Init_Peakset` and `Init_Matrix`.   
+
+
+
+```{r creating object }
+featureData <- left_join(featureData,window_annotation%>%dplyr::select(chr,start,end,peakid)) 
+featureData %>% unique()  -> peakset
+initiated_peaks <- Init_Peakset(peakset) 
+initiated_mm <- Init_Matrix(cellname = rownames(phenoData),peakname = initiated_peaks$peakId,matrix = t(coverage_mat_wide[rownames(phenoData),2:ncol(coverage_mat_wide)]))
+epitrace_obj <- EpiTrace_prepare_object(initiated_peaks,initiated_mm,ref_genome = 'hg19',non_standard_clock = F,clock_gr_list = clock_gr_list,qualnum=1)
+DefaultAssay(epitrace_obj) <- 'peaks'
+```
+
+#### Basic pre-processing
+
+We firstly annotate the cells by adding additional metadata into the object.  
+
+
+
+
+```{r re-engage with clustering}
+epitrace_obj@meta.data %>% as.data.frame() -> temp_meta
+phenoData$cell <- rownames(phenoData)
+temp_meta <- left_join(temp_meta,phenoData)
+rownames(temp_meta) <- rownames(epitrace_obj@meta.data )
+epitrace_obj@meta.data  <- temp_meta 
+
+epitrace_obj -> epitrace_obj_backup
+# epitrace_obj <- subset(epitrace_obj,stage %ni% c('pe','placenta','trophoblast','gamete'))
+
+epitrace_obj <- epitrace_obj %>% RunTFIDF() %>% FindTopFeatures(min.cutoff=50) %>% RunSVD() %>% RunUMAP(reduction = 'lsi', dims = 2:31) %>% FindNeighbors(reduction = 'lsi', dims = 2:31,k.param = 21) %>% FindClusters(verbose = FALSE, algorithm = 3,resolution = 0.8)
+
+stage_steps <- c('gamete','zygote','pre-zga','zga','epiblast','trophoectoderm','trophoblast','esc','pe','placenta')
+colors_plot <- colorRampPalette(colors=RColorBrewer::brewer.pal(n=9,name = 'Set1'))(length(unique(epitrace_obj@meta.data$stage)))
+names(colors_plot) <- unique(epitrace_obj@meta.data$stage)
+
+DimPlot(epitrace_obj,group.by = 'stage',label = T) -> p1
+p1$data -> p1d
+p1d %>% dplyr::group_by(stage) %>% dplyr::summarise(UMAP_1=mean(UMAP_1),UMAP_2=mean(UMAP_2)) -> centroid_df
+ggplot(p1d,aes(x=UMAP_1,y=UMAP_2)) + geom_point(data=p1d,mapping=aes(color=stage)) + geom_label(data=centroid_df,mapping=aes(label=stage),fill='white',color='black')+ scale_color_manual(values = colors_plot) + theme_classic() 
+
+
+```
+
+#### Estimate age and phylogeny  
+
+We estimate the EpiTrace age, and phylogeny based on EpiTrace age, by using the `RunEpiTraceAge` and `RunEpiTracePhylogeny` commands.    
+
+```{r estimate age,fig.width=3,fig.height=1.5}
+
+# epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj)
+epitrace_obj$remove_tag <- grepl('3PN',epitrace_obj$tissue) 
+epitrace_obj_age_estimated <- RunEpiTraceAge(subset(epitrace_obj,remove_tag %in% F))
+stage_steps <- c('gamete','zygote','pre-zga','zga','epiblast','trophoectoderm','trophoblast','esc','pe','placenta')
+colors_plot <- colorRampPalette(colors=RColorBrewer::brewer.pal(n=9,name = 'Set1'))(length(unique(epitrace_obj_age_estimated@meta.data$stage)))
+names(colors_plot) <- unique(epitrace_obj_age_estimated@meta.data$stage)
+
+epitrace_obj_age_estimated@meta.data$stage <- factor(epitrace_obj_age_estimated@meta.data$stage,levels=stage_steps)
+ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$stage %ni% 'trophoblast',],aes(y=stage,x=EpiTraceAge_MitosisClock)) + geom_boxplot(aes(fill=stage)) + ggbeeswarm::geom_beeswarm() + scale_fill_manual(values=colors_plot) +  scale_color_manual(values=colors_plot) + theme_classic()  -> p1
+
+epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$stage %ni% 'trophoblast',] %>% dplyr::group_by(stage) %>% dplyr::summarise(m=mean(EpiTraceAge_MitosisClock),sd=sd(EpiTraceAge_MitosisClock),var=var(EpiTraceAge_MitosisClock)) %>% arrange(stage)  -> df_stats
+
+ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$stage %ni% 'trophoblast' & !grepl('3PN',epitrace_obj_age_estimated$tissue),],aes(y=stage,x=EpiTraceAge_MitosisClock)) + geom_boxplot(aes(fill=stage)) + ggbeeswarm::geom_beeswarm() + scale_fill_manual(values=colors_plot) +  scale_color_manual(values=colors_plot) + theme_classic() + xlab('MitosisClock') + theme(axis.title.y = element_blank())
+
+epitrace_obj_age_estimated@meta.data$plot_title <- ''
+list('placenta'='CTRL_Placenta',
+     'pe'='PE_Placenta',
+     'trophoblast' = 'Trophoblast',
+     'esc'='ESC',
+     'trophoectoderm'='Trophectoderm',
+     'epiblast'='Epiblast',
+      'zga'='ZGA',
+      'pre-zga'='Pre-ZGA',
+     'zygote'='Zygote',
+     'gamete'='Gamete') -> convert_list 
+for (x in names(convert_list)){
+  epitrace_obj_age_estimated@meta.data$plot_title[epitrace_obj_age_estimated@meta.data$stage %in% x] <- convert_list[[x]]
+}
+epitrace_obj_age_estimated@meta.data$plot_title <- factor(epitrace_obj_age_estimated@meta.data$plot_title,levels=rev(unlist(convert_list)))
+ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$stage %ni% 'trophoblast' & !grepl('3PN',epitrace_obj_age_estimated$tissue),],aes(y=plot_title,x=EpiTraceAge_MitosisClock)) + geom_boxplot(aes(fill=stage)) + ggbeeswarm::geom_beeswarm() + scale_fill_manual(values=colors_plot) +  scale_color_manual(values=colors_plot) + theme_classic() + xlab('MitosisClock') + theme(axis.title.y = element_blank(),text=element_text(size=20))
+
+
+ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$stage %ni% 'trophoblast' & !grepl('3PN',epitrace_obj_age_estimated$tissue),],aes(y=plot_title,x=Accessibility_MitosisClock)) + geom_boxplot(aes(fill=stage)) + ggbeeswarm::geom_beeswarm() + scale_fill_manual(values=colors_plot) +  scale_color_manual(values=colors_plot) + theme_classic() + xlab('Accessibility Mitosis ClockDML') + theme(axis.title.y = element_blank(),text=element_text(size=20))
+
+ggplot(epitrace_obj_age_estimated@meta.data,aes(y=stage,x=Accessibility_MitosisClock)) + geom_boxplot(aes(fill=stage)) + ggbeeswarm::geom_beeswarm() + scale_fill_manual(values=colors_plot) +  scale_color_manual(values=colors_plot) + theme_classic()
+
+df_stats$cell_no <- c(0,1,4,24,400,600,2000,5*1e7,1e8)
+ggplot(df_stats,aes(y=stage,x=m)) + geom_point(size=4) + theme_classic() + ylab('Mean Mitotic Clock') -> p0
+(p0|p1+theme(axis.text.y = element_blank(),axis.title.y = element_blank()) )+ plot_layout(widths = c(1,1.5))
+p1
+
+
+# ggplot(epitrace_obj_age_estimated@meta.data[epitrace_obj_age_estimated@meta.data$stage %ni% 'trophoblast' & !grepl('3PN',epitrace_obj_age_estimated$tissue),],aes(y=stage,x=AccessibilitySmooth_MitosisClock)) + geom_boxplot(aes(fill=stage)) + ggbeeswarm::geom_beeswarm() + scale_fill_manual(values=colors_plot) +  scale_color_manual(values=colors_plot) + theme_classic()
+
+stage_steps <- rev(unlist(convert_list))
+colors_plot <- colorRampPalette(colors=RColorBrewer::brewer.pal(n=9,name = 'Set1'))(length(unique(epitrace_obj_age_estimated@meta.data$plot_title)))
+names(colors_plot) <- unique(epitrace_obj_age_estimated@meta.data$plot_title)
+
+DimPlot(epitrace_obj_age_estimated,group.by = 'plot_title',label = T) -> p1
+p1$data -> p1d
+p1d <- p1d[p1d$plot_title %ni% 'Trophoblast',]
+p1d %>% dplyr::group_by(plot_title) %>% dplyr::summarise(UMAP_1=mean(UMAP_1),UMAP_2=mean(UMAP_2)) -> centroid_df
+ggplot(p1d,aes(x=UMAP_1,y=UMAP_2)) + geom_point(data=p1d,mapping=aes(color=plot_title)) + ggrepel::geom_label_repel(data=centroid_df,mapping=aes(label=plot_title),fill='white',color='black')+ scale_color_manual(values = colors_plot) + theme_classic() + theme(text=element_text(size=20))
+
+```
+
+Phylogeny is hard to estimate here because cell number is very few. 
+
+
+
