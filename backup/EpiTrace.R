@@ -110,8 +110,8 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   # lsi_dim=2:50
   # fn.k.param=21
   # sep_string= c(":", "-")
-  
-  
+
+
   # 0. try error catch
   if(!is.null(celltype)){
     if(length(celltype) != ncol(matrix)){
@@ -142,7 +142,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
     standard_clock = F
   }
   message('Input peakset is set to be ',ref_genome)
-  
+
   # 0.5. Filter the input matrix to a better one (try removing zero expression cells, and zero expression peaks)
   which(colSums(matrix)==0) %>% names -> remove_cells
   which(rowSums(matrix)<10 | rowSums(matrix>0)<10) %>% names -> remove_peaks
@@ -157,7 +157,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
     }
     matrix <- matrix[,!logical_cell_vec]
   }
-  
+
   if(length(remove_peaks)>0){
     peakSet -> original_peakSet
     peakSet <- peakSet[!logical_peak_vec,]
@@ -166,8 +166,8 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   if(!is.null(celltype)){
     names(celltype) <- colnames(matrix)
   }
-  
-  
+
+
   # 1. prepare Clock region intersection to input peak set.
   Overlap_Input_with_Clock(peakSet_generanges=peakSet,clock_gr_list=clock_gr_list,ref=ref_genome) -> overlap_result
   overlap_list_of_list <- overlap_result$overlap_list_of_list
@@ -186,8 +186,8 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   if(non_standard_clock){
     result_clock_gr_list <- clock_gr_list
   }
-  
-  
+
+
   # 2. prepare the chromatin assay with Signac
   Signac::CreateChromatinAssay(matrix, sep = sep_string,
                                genome = ref_genome,ranges=peakSet) -> chrom_assay
@@ -202,7 +202,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   for (x in names(result_clock_gr_list)){
     message('add ',x)
     matrix[findOverlaps(peakSet,result_clock_gr_list[[x]])@from %>% unique,] -> mtx2
-    message('good quality cells ',sum(colSums(mtx2,na.rm=T)>=qualnum),' and peaks ',sum(rowSums(mtx2,na.rm=T)>=qualnum))
+    message('good quality cells ',sum(colSums(mtx2,na.rm=T)>=qualnum,),' and peaks ',sum(rowSums(mtx2,na.rm=T)>=qualnum))
     dim(mtx2) -> dimcurr
     p=0
     count = 0
@@ -226,7 +226,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   tempdf <- Seurat::RunUMAP(object = tempdf, reduction = 'lsi', dims = lsi_dim)
   tempdf <- Seurat::FindNeighbors(object = tempdf, reduction = 'lsi', dims = lsi_dim,k.param = fn.k.param)
   tempdf <- Seurat::FindClusters(object = tempdf, verbose = FALSE, algorithm = 3)
-  
+
   # define identity
   tempdf@meta.data %>% rownames -> final_cells
   if(!is.null(celltype)){
@@ -242,7 +242,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
 
 
 
-#' RunEpiTraceAge: wrapper function for computing EpiTrace age for input Seurat object with scATAC/bulkATAC data.
+qualnum#' RunEpiTraceAge: wrapper function for computing EpiTrace age for input Seurat object with scATAC/bulkATAC data.
 #' @title RunEpiTraceAge
 #'
 #' @description wrapper function for computing EpiTrace age for input scATAC/bulkATAC data.
@@ -408,7 +408,7 @@ Overlap_Input_with_Clock <- function(peakSet_generanges,clock_gr_list=clock_gr_l
 #' @examples
 
 
-EpiTraceAge_backup <- function(mat){
+EpiTraceAge <- function(mat){
   require(Matrix)
   bad_peaks <- rowSums(mat) == 0
   num_bad_peaks <- length(which(bad_peaks == TRUE))
@@ -470,111 +470,6 @@ EpiTraceAge_backup <- function(mat){
   ) -> returndf
   return(returndf)
 }
-
-# subsample
-EpiTraceAge <- function(mat){
-  size=2000
-  ncores=10
-  enableFast=T
-  subsamplesize = 2000
-  batch <- NULL
-  #Subsample routine
-  if(enableFast == FALSE){
-    size <- ncol(mat)
-  } else {
-    size <- min(ncol(mat),subsamplesize)
-  }
-  chunk <- round(ncol(mat)/size)
-  subsamples <- split(1:ncol(mat), sample(factor(1:ncol(mat) %% chunk)))
-  require(Matrix)
-  bad_peaks <- rowSums(mat) == 0
-  num_bad_peaks <- length(which(bad_peaks == TRUE))
-  mat <- mat[!bad_peaks,]
-  chunk <- round(ncol(mat)/size)
-  subsamples <- split(1:ncol(mat), sample(factor(1:ncol(mat) %% chunk)))
-  mat_origin <- mat
-  batch_origin <- batch
-  # batches <- parallel::mclapply(subsamples, mc.cores = min(chunk, ncores), function(subsample){
-  batches <- lapply(subsamples, function(subsample){
-    #Checkpoint: Sequencing depth normalization
-    mat <- mat_origin[,subsample]
-    batch <- batch_origin[subsample]
-    mat_log <- log(mat+1,2)
-    mat_log <- data.matrix(mat_log)
-    counts <- rowSums(mat>0,na.rm=T)
-    reads <- rowSums(mat,na.rm=T)
-    normalized_mat <- t(t(mat)*counts/reads)
-    normalized_mat <- log(normalized_mat+1,2)
-    normalized_mat[is.na(normalized_mat)] <- 0
-    accessible_loci <- rowSums(normalized_mat > 0)
-    per_cell_accessible_loci <- colSums(normalized_mat > 0)
-    peaks_expressed_in_n_cell <- rowSums(normalized_mat>0)
-    peaks_expressed_in_n_cell>0.05*ncol(mat) -> good_peaks_for_selecting_loci
-    mtx_with_better_peaks <- normalized_mat[good_peaks_for_selecting_loci,]
-    if(class(mtx_with_better_peaks)[[1]]=='dgeMatrix'){
-      dispersion <- matrixStats::rowVars(mtx_with_better_peaks %>% as.matrix())/rowMeans(mtx_with_better_peaks)
-    }else{
-      dispersion <- sparseMatrixStats::rowVars(mtx_with_better_peaks)/rowMeans(mtx_with_better_peaks)
-    }
-    size_variable_loci <- 3000
-    cutoff <- sort(dispersion) %>% tail(min(length(dispersion),size_variable_loci)) %>% head(1) %>% as.numeric()
-    normalized_variable_mat <- normalized_mat[names(dispersion)[dispersion >= cutoff],]
-    normalized_variable_mat <- normalized_variable_mat[,colSums(normalized_variable_mat)>0]
-    WGCNA::cor(normalized_variable_mat) -> cor_normalized_variable_mat
-    mean(as.vector(cor_normalized_variable_mat)) -> mean_number
-    diag(cor_normalized_variable_mat) <- 0
-    cor_normalized_variable_mat[cor_normalized_variable_mat<0] <- 0
-    cor_normalized_variable_mat[cor_normalized_variable_mat<mean_number] <- 0
-    censored_cor_normalized_variable_mat <- cor_normalized_variable_mat/rowSums(cor_normalized_variable_mat)
-    censored_cor_normalized_variable_mat[rowSums(cor_normalized_variable_mat)==0,] <- 0
-    final_cells <- colnames(censored_cor_normalized_variable_mat)
-    mat2 <- normalized_mat[,final_cells]
-    per_cell_accessible_loci <- per_cell_accessible_loci[final_cells]
-    list(mat2 = mat2,counts = counts, censored_cor_normalized_variable_mat = censored_cor_normalized_variable_mat,per_cell_accessible_loci=per_cell_accessible_loci) -> returnlist
-    return(returnlist)
-  })
-  mat2 <- do.call(cbind, lapply(batches, function(x) x$mat2))
-  counts <- do.call(c, lapply(batches, function(x) x$counts))
-  per_cell_accessible_loci <- lapply(batches,function(x) x$per_cell_accessible_loci) %>% unlist()
-  correlation_of_each_peak_to_per_cell_accessible_loci_counts <- WGCNA::cor(x=t(mat2),y=per_cell_accessible_loci,drop = T)
-  correlation_of_each_peak_to_per_cell_accessible_loci_counts[is.na(correlation_of_each_peak_to_per_cell_accessible_loci_counts)] <- 0
-  names(sort(correlation_of_each_peak_to_per_cell_accessible_loci_counts)%>%tail(min(length(correlation_of_each_peak_to_per_cell_accessible_loci_counts),200))) -> best_loci
-  accessible_loci_counts_smoothened <- colMeans(mat2[best_loci,])
-  samplesize <- unlist(lapply(batches, function(x) x$per_cell_accessible_loci %>% length()))
-  accessible_loci_counts_smoothened_list <- split(accessible_loci_counts_smoothened, as.numeric(rep(names(samplesize), samplesize)))
-  censored_cor_normalized_variable_mat_list <- lapply(batches, function(x) x$censored_cor_normalized_variable_mat)
-  epitrace_ranked <- lapply(1:length(censored_cor_normalized_variable_mat_list), function(i) {
-    censored_cor_normalized_variable_mat <- censored_cor_normalized_variable_mat_list[[i]]
-    accessible_loci_counts_smoothened <- accessible_loci_counts_smoothened_list[[i]]
-    nnls_res <- nnls::nnls(censored_cor_normalized_variable_mat,accessible_loci_counts_smoothened)
-    nx1_mat <- censored_cor_normalized_variable_mat %*% nnls_res$x
-    stepcount = 1
-    delta = 1
-    extension_parameter=0.99
-    original_nx1_mat <- nx1_mat
-    current_nx1_mat <- nx1_mat
-    next_nx1_mat <- nx1_mat
-    while(stepcount < 50000 & delta >= 1e-9){
-      stepcount = stepcount + 1
-      next_nx1_mat <- extension_parameter*(censored_cor_normalized_variable_mat%*% current_nx1_mat) + (1-extension_parameter) * original_nx1_mat
-      delta <- mean(abs(next_nx1_mat-current_nx1_mat))
-      current_nx1_mat <- next_nx1_mat
-    }
-    epitrace_ranked <- rank(current_nx1_mat)
-    epitrace_ranked
-  }) %>% unlist()
-  final_cells <- colnames(mat2)
-  epitrace_norm <- (epitrace_ranked-min(epitrace_ranked))/(max(epitrace_ranked)-min(epitrace_ranked))
-  data.frame(
-    cell=final_cells,
-    EpiTrace = epitrace_norm,
-    Accessible_Loci = per_cell_accessible_loci,
-    Accessible_Loci_Smooth = accessible_loci_counts_smoothened
-  ) -> returndf
-  return(returndf)
-}
-
-
 
 
 #' AssociationOfPeaksToAge: function for computing each peaks' linear correlation to EpiTrace age.
