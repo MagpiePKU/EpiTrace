@@ -15,17 +15,19 @@ Description: Inference of cell age and phylogeny from single cell ATAC data.
 Encoding: UTF-8
 LazyData: true
 License: GPL (>= 3)
-URL: 
+URL: https://github.com/MagpiePKU/EpiTrace
+Depends:
+    R (>= 4)
 Imports:
     dplyr,
     tidyr,
     RColorBrewer,
     ggplot2,
-    Seurat,
-    Signac,
+    Seurat (>= 4),
+    Signac ( >= 1.5.0),
     GenomicRanges,
-    plyranges,
-    WGCNA,
+    plyranges (>= 1),
+    WGCNA (>= 1.7),
     stringr,
     easyLift,
     parallel,
@@ -36,7 +38,6 @@ Imports:
     ggtree,
     ape,
     reticulate,
-    ggplot2,
     ggpubr
 Suggests:
     ArchR,
