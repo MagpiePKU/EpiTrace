@@ -213,7 +213,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
         p=1
       }
       count = count + 1
-      print(dimcurr[1]-dimnext[1])
+      # print(dimcurr[1]-dimnext[1]) # remove this debug tag
     }
     tempdf$cell <- rownames(tempdf@meta.data)
     tempdf <- subset(tempdf,cell %in% colnames(mtx2))
