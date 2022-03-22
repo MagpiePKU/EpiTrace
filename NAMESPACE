@@ -6,6 +6,7 @@ export('EpiTrace_prepare_object')
 export('RunEpiTraceAge')
 export('RunEpiTracePhylogeny')
 export('AssociationOfPeaksToAge')
+export('EpiTraceAge_Convergence')
 
 import(ccaPP)
 import(RColorBrewer)

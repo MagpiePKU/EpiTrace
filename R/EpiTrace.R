@@ -610,12 +610,137 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
     epitrace_age_vector <- epitrace_object@meta.data[,epitrace_age_name] %>% as.numeric()
   }
   cell_res_single <- epitrace_object@meta.data %>% as.data.frame()
-  cor_res_PT <- WGCNA::cor(x=t(peaks_PT_dat),y=epitrace_age_vector)
+  # add parallel and avoid explosion
+  if(is.null(names(epitrace_age_vector))){
+	names(epitrace_age_vector) <- rownames(epitrace_object@meta.data)
+  }
+  epitrace_age_vector -> age_vec
+  is.na(age_vec) -> remove_vec
+  peaks_PT_dat -> to_be_associated_mtx
+  if(sum(remove_vec)>0){
+	age_vec <- age_vec[!remove_vec]
+	to_be_associated_mtx <- to_be_associated_mtx[,!remove_vec]
+  }  
+  parallel::mclapply(c(1:ceiling(dim(to_be_associated_mtx)[1]/1000)),mc.cores = 12,function(x){
+    WGCNA::cor(x = t(to_be_associated_mtx[((1000*(x-1))+1):min(dim(to_be_associated_mtx)[1],1000*x),]), y = age_vec) 
+  }) -> res_list_cor
+  res_list_cor %>% unlist -> cor_res_PT
+
+  # cor_res_PT <- WGCNA::cor(x=t(peaks_PT_dat),y=epitrace_age_vector)
   scale(cor_res_PT) -> scaled_cor_res_PT
   names(cor_res_PT) <- rownames(peaks_PT_dat)
   data.frame('locus'=names(cor_res_PT),correlation_of_EpiTraceAge=cor_res_PT,scaled_correlation_of_EpiTraceAge=scaled_cor_res_PT) -> returndf
   return(returndf)
 }
+
+
+
+
+#' EpiTraceAge_Convergence: wrapper function for iterative optimization for EpiTrace age (on a specific system)
+#' @title EpiTraceAge_Convergence
+#'
+#' @description wrapper function for iterative optimization for EpiTrace Age. 
+#'     The function goes through building an EpiTrace object with given clock reference (the DML). 
+#'     Initial derivation of sample age was performed with clock reference only.
+#'     Age-association of ChrAcc peaks were performed to extract informative peaks. 
+#'     Iterative inference of cell age was performed with an updated clock reference containing 
+#'     the top peaks associating with age. 
+#'     The interation goes up to 10 times or when age derivation converge under given error limit. 
+#'     Please use **all** peaks instead of **partial** peaks for this optimization. 
+#'
+#' @details EpiTraceAge_Convergence (peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F,qualnum = 10,Z_cutoff=3,mean_error_limit=1e-2)
+#' @details Note: SC/Bulk could not be run at the same time as the normalization/filtering process kills single cells in the face of bulk data
+#'
+#' @param matrix input count matrix of ATAC data, rows=GRanges and cols=samples/single cells.
+#' @param peakSet a GenomicRanges object corresponding to the rows of count matrix.
+#' @param min.cutoff minimal cutoff for Signac variableFeature calling
+#' @param lsi_dim the dimensionalities used in LSI for Signac
+#' @param fn.k.param the k parameter used in FindNeighbours
+#' @param ref_genome hg38 or hg19. Currently only support these two.
+#' @param sep_string the separation string for row names in input matrix to generate ranges. for example, 'chr1:1-2' is c(':','-')
+#' @param clock_gr_list the clockDML set, is a list of reference GRanges, each corresponds to a set of clock-like DML or DMR
+#' @param non_standard_clock whether is not using non-standard reference clockDML sets.
+#' @param qualnum minimal peak/cell number for classifying a 'qualified' cell/peak, default set to 10, can be 1 for including most cells/peaks. 
+#'
+#' @return a seurat object. 
+#' @export
+#' @examples
+
+
+
+EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50, 
+                                     lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":", 
+                                                                                                          "-"), clock_gr_list = clock_gr_list, non_standard_clock = F, 
+                                     qualnum = 10,Z_cutoff=3,mean_error_limit=1e-2) 
+{
+  
+  # test
+  # 
+  # peakSet <- initiated_peaks
+  # matrix <- inputmatrix
+  # celltype <- NULL
+  # min.cutoff=50
+  # lsi_dim = 2:50
+  # fn.k.param = 21
+  # ref_genome = "hg38"
+  # sep_string = c(":", 
+  #                "-")
+  # clock_gr_list = clock_gr_list
+  # qualnum = 10
+  # Z_cutoff=3
+  # mean_error_limit=1e-2
+  
+  # initiate
+  original_peakset <- plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]]))
+  
+  if (ref_genome  %in% "hg38") {
+    original_peakset <- easyLift::easyLiftOver(original_peakset,'hg19_hg38')
+  }
+  if (ref_genome != "hg19" & ref_genome != "hg38") {
+    message("please make double sure your ref genome, peak set and cells are similar.")
+  }
+  
+  iterative_count = 1
+  na_vector_current <- ncol(matrix)
+  na_vector_previous <- ncol(matrix)
+  error <- rep(1,ncol(matrix))
+  mean_error <- mean(error)
+  iterative_GR_list <- list('iterative'=original_peakset)
+  
+  epitrace_obj <- EpiTrace_prepare_object(peakSet,matrix,celltype,ref_genome = 'hg19',non_standard_clock = T,clock_gr_list = iterative_GR_list,sep_string=sep_string,fn.k.param = fn.k.param,lsi_dim = lsi_dim,qualnum = qualnum,min.cutoff=min.cutoff
+  ) %>%suppressMessages() %>% suppressWarnings() # note here I do not switch the ref genome in prepare_obj, for simplicity. 
+  epitrace_obj_original_metadata <- epitrace_obj@meta.data
+  epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj) %>%suppressMessages() %>% suppressWarnings()
+  age_current <- epitrace_obj_age_estimated@meta.data$EpiTraceAge_iterative
+  na_vector_current <- is.na(age_current)
+  
+  while(sum(na_vector_current)<=sum(na_vector_previous) & mean_error >= mean_error_limit & iterative_count <= 10){
+    message('Iterating ',iterative_count)
+    age_previous <- age_current
+    na_vector_previous <- na_vector_current
+    iterative_count = iterative_count + 1
+    updated_peakset <- AssociationOfPeaksToAge(epitrace_obj_age_estimated,epitrace_age_name = "EpiTraceAge_iterative")
+    updated_peakset <- separate(updated_peakset,col='locus',into=c('chr','start','end'),remove=F,convert=T)
+    updated_peakset_gr <- makeGRangesFromDataFrame(updated_peakset)
+    findOverlaps(makeGRangesFromDataFrame(updated_peakset_gr),plyranges::reduce_ranges(original_peakset))@from %>% unique -> peaks_overlap_with_clock
+    updated_peakset$locus_type <- 'Others'
+    updated_peakset$locus_type[peaks_overlap_with_clock] <- 'Chronology'
+    list('iterative'=updated_peakset_gr[abs(updated_peakset$scaled_correlation_of_EpiTraceAge)>Z_cutoff | updated_peakset$locus %ni% 'Others',]) -> iterative_clock_gr_list
+    epitrace_obj_iterative <- EpiTrace_prepare_object(initiated_peaks,inputmatrix,celltype,ref_genome = 'hg19',non_standard_clock = T,clock_gr_list = iterative_clock_gr_list) %>%suppressMessages() %>% suppressWarnings()
+    epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj_iterative)%>%suppressMessages() %>% suppressWarnings()
+    age_current <- epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative
+    error <- age_current - age_previous
+    mean_error = mean(abs(error),na.rm=T)
+    na_vector_current <- is.na(age_current)
+    epitrace_obj_iterative_age_estimated@misc$iterative_count <- iterative_count
+    message('mean_error = ',mean_error)
+  }
+  epitrace_obj_iterative_age_estimated$EpiTraceAge_Clock_initial <- epitrace_obj_age_estimated@meta.data$EpiTraceAge_iterative
+  epitrace_obj_iterative_age_estimated$Accessibility_initial <- epitrace_obj_age_estimated@meta.data$Accessibility_iterative
+  epitrace_obj_iterative_age_estimated$AccessibilitySmooth_initial <- epitrace_obj_age_estimated@meta.data$AccessibilitySmooth_iterative
+  return(epitrace_obj_iterative_age_estimated)
+}
+
 
 
 
