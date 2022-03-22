@@ -670,7 +670,7 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 #' @examples
 
 
-EpiTrace_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50, lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":", "-"), clock_gr_list = clock_gr_list[1:2], non_standard_clock = F, qualnum = 10,Z_cutoff=3,mean_error_limit=1e-2,ncore_lim=12) {
+EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50, lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":", "-"), clock_gr_list = clock_gr_list[1:2], non_standard_clock = F, qualnum = 10,Z_cutoff=3,mean_error_limit=1e-2,ncore_lim=12) {
     # initiate
     original_clk_peakset <- plyranges::reduce_ranges(c(clock_gr_list))
     if (ref_genome  %in% "hg38") {
