@@ -661,6 +661,8 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 #' @param clock_gr_list the clockDML set, is a list of reference GRanges, each corresponds to a set of clock-like DML or DMR
 #' @param non_standard_clock whether is not using non-standard reference clockDML sets.
 #' @param qualnum minimal peak/cell number for classifying a 'qualified' cell/peak, default set to 10, can be 1 for including most cells/peaks. 
+#' @param Z_cutoff a cutoff for scaled (Z) correlation between peak and cell age. usually set to >= 2.5
+#' @param mean_error_limit a limit for the difference between cell ages derived from previous and current iteration. usually set to 1e-2 - 1e-6. 
 #'
 #' @return a seurat object. 
 #' @export
