@@ -471,15 +471,19 @@ EpiTraceAge_backup <- function(mat){
   return(returndf)
 }
 
-# subsample
-EpiTraceAge <- function(mat){
-  size=2000
-  ncores=10
-  enableFast=T
-  subsamplesize = 2000
-  batch <- NULL
+# subsample, switch between parallel/nonparallel 
+							  
+EpiTraceAge <- function(mat,ncores=20,parallel=F,size=2000,batch=NULL,subsamplesize=2000){
+  #test
+  # mat <- mat_test
+  # ncores=20
+  # parallel=F
+  # size=2000
+  # batch=NULL
+  # subsamplesize=2000
+  
   #Subsample routine
-  if(enableFast == FALSE){
+  if(parallel == FALSE){
     size <- ncol(mat)
   } else {
     size <- min(ncol(mat),subsamplesize)
@@ -494,8 +498,7 @@ EpiTraceAge <- function(mat){
   subsamples <- split(1:ncol(mat), sample(factor(1:ncol(mat) %% chunk)))
   mat_origin <- mat
   batch_origin <- batch
-  # batches <- parallel::mclapply(subsamples, mc.cores = min(chunk, ncores), function(subsample){
-  batches <- lapply(subsamples, function(subsample){
+  sub_batch_function <- function(subsample){
     #Checkpoint: Sequencing depth normalization
     mat <- mat_origin[,subsample]
     batch <- batch_origin[subsample]
@@ -532,7 +535,16 @@ EpiTraceAge <- function(mat){
     per_cell_accessible_loci <- per_cell_accessible_loci[final_cells]
     list(mat2 = mat2,counts = counts, censored_cor_normalized_variable_mat = censored_cor_normalized_variable_mat,per_cell_accessible_loci=per_cell_accessible_loci) -> returnlist
     return(returnlist)
-  })
+  }
+  if(parallel==T){
+    batches <- parallel::mclapply(subsamples, mc.cores = min(chunk, ncores), function(subsample_x){
+      sub_batch_function(subsample=subsample_x)
+    })
+  }else{
+    batches <- lapply(subsamples, function(subsample_x){
+      sub_batch_function(subsample=subsample_x)
+    })
+  }
   mat2 <- do.call(cbind, lapply(batches, function(x) x$mat2))
   counts <- do.call(c, lapply(batches, function(x) x$counts))
   per_cell_accessible_loci <- lapply(batches,function(x) x$per_cell_accessible_loci) %>% unlist()
@@ -543,7 +555,7 @@ EpiTraceAge <- function(mat){
   samplesize <- unlist(lapply(batches, function(x) x$per_cell_accessible_loci %>% length()))
   accessible_loci_counts_smoothened_list <- split(accessible_loci_counts_smoothened, as.numeric(rep(names(samplesize), samplesize)))
   censored_cor_normalized_variable_mat_list <- lapply(batches, function(x) x$censored_cor_normalized_variable_mat)
-  epitrace_ranked <- lapply(1:length(censored_cor_normalized_variable_mat_list), function(i) {
+  rank_function <- function(i){
     censored_cor_normalized_variable_mat <- censored_cor_normalized_variable_mat_list[[i]]
     accessible_loci_counts_smoothened <- accessible_loci_counts_smoothened_list[[i]]
     nnls_res <- nnls::nnls(censored_cor_normalized_variable_mat,accessible_loci_counts_smoothened)
@@ -562,7 +574,16 @@ EpiTraceAge <- function(mat){
     }
     epitrace_ranked <- rank(current_nx1_mat)
     epitrace_ranked
-  }) %>% unlist()
+  }
+  if(parallel==T){
+    epitrace_ranked <- parallel::mclapply(1:length(censored_cor_normalized_variable_mat_list), mc.cores = min(chunk,ncores),function(i) {
+      rank_function(i)
+    }) %>% unlist()
+  }else{
+    epitrace_ranked <- lapply(1:length(censored_cor_normalized_variable_mat_list), function(i) {
+      rank_function(i)
+    }) %>% unlist()
+  }
   final_cells <- colnames(mat2)
   epitrace_norm <- (epitrace_ranked-min(epitrace_ranked))/(max(epitrace_ranked)-min(epitrace_ranked))
   data.frame(
@@ -573,6 +594,8 @@ EpiTraceAge <- function(mat){
   ) -> returndf
   return(returndf)
 }
+
+
 
 
 
@@ -590,13 +613,14 @@ EpiTraceAge <- function(mat){
 #' @param epitrace_age_name name of output epitrace age
 #' @param subset_of_cells subset of cell types (Idents) that you want to use in the computation
 #' @param epitrace_age_vector alternatively you can have a vector of ages that you would like to test
+#' @param parallele switch for parallel						      
 #'
 #'
 #' @return a data frame with locus (the peak), correlation_of_EpiTraceAge, scaled_correlation_of_EpiTraceAge.
 #' @export
 #' @examples
 
-AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace_age_name='EpiTraceAge_all',subset_of_cells=NULL,epitrace_age_vector=NULL){
+AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace_age_name='EpiTraceAge_all',subset_of_cells=NULL,epitrace_age_vector=NULL,parallel=F){
   if(!is.null(subset_of_cells)){
     subset(epitrace_object,celltype %in% subset_of_cells) -> epitrace_object
   }else{
@@ -621,9 +645,15 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 	age_vec <- age_vec[!remove_vec]
 	to_be_associated_mtx <- to_be_associated_mtx[,!remove_vec]
   }  
-  parallel::mclapply(c(1:ceiling(dim(to_be_associated_mtx)[1]/1000)),mc.cores = 12,function(x){
-    WGCNA::cor(x = t(to_be_associated_mtx[((1000*(x-1))+1):min(dim(to_be_associated_mtx)[1],1000*x),]), y = age_vec) 
-  }) -> res_list_cor
+  if(parallel==F){
+	  lapply(c(1:ceiling(dim(to_be_associated_mtx)[1]/1000)),function(x){
+	    WGCNA::cor(x = t(to_be_associated_mtx[((1000*(x-1))+1):min(dim(to_be_associated_mtx)[1],1000*x),]), y = age_vec) 
+	  }) -> res_list_cor
+  }else{
+	  parallel::mclapply(c(1:ceiling(dim(to_be_associated_mtx)[1]/1000)),mc.cores = 12,function(x){
+	    WGCNA::cor(x = t(to_be_associated_mtx[((1000*(x-1))+1):min(dim(to_be_associated_mtx)[1],1000*x),]), y = age_vec) 
+	  }) -> res_list_cor
+  }
   res_list_cor %>% unlist -> cor_res_PT
 
   # cor_res_PT <- WGCNA::cor(x=t(peaks_PT_dat),y=epitrace_age_vector)
@@ -672,10 +702,8 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 #' @examples
 
 
-EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50, lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", 
-				     sep_string = c(":", "-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), 
-				     non_standard_clock = F, qualnum = 10,Z_cutoff=3,mean_error_limit=1e-2,ncore_lim=12,parallel=T,
-				     iterative_time=2) {
+
+EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50, lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":", "-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), non_standard_clock = F, qualnum = 10,Z_cutoff=3,mean_error_limit=1e-2,ncore_lim=12,parallel=T,iterative_time=2) {
   
   # test
   
@@ -725,7 +753,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   # matrix %>% as.matrix() -> to_be_associated_mtx
   matrix -> to_be_associated_mtx
   
-  while(sum(na_vector_current)<=sum(na_vector_previous) & mean_error >= mean_error_limit & iterative_count <= iterative_time){
+  while((sum(na_vector_current)<=sum(na_vector_previous)) & (mean_error >= mean_error_limit) & (iterative_count <= iterative_time)){
     message('Iterating ',iterative_count)
     age_previous <- age_current
     na_vector_previous <- na_vector_current
@@ -735,7 +763,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
       age_current <- age_current[!remove_vec]
       to_be_associated_mtx <- to_be_associated_mtx[,!remove_vec]
     }  
-    if(parallel==T){ # speedup
+    if(parallel==T){
       parallel::mclapply(c(1:ceiling(dim(to_be_associated_mtx)[1]/1000)),mc.cores = ncore_lim,function(x){
         target_mtx <- t(to_be_associated_mtx[((1000*(x-1))+1):min(dim(to_be_associated_mtx)[1],1000*x),]) %>% as.matrix() # otherwise got large cholmod
         WGCNA::cor(x = target_mtx, y = age_current) 
@@ -760,8 +788,18 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
     findOverlaps(peakSet,iterative_clock_gr_list[[1]])@from %>% unique() -> overlap_with_clk
     matrix[overlap_with_clk,] -> initial_matrix_clk
     peakSet[overlap_with_clk,] -> initial_peakSet_clk
-    # epitrace_obj_iterative <- EpiTrace_prepare_object(initial_peakSet_clk,initial_matrix_clk,celltype,ref_genome = 'hg19',non_standard_clock = T,clock_gr_list = iterative_clock_gr_list) %>%suppressMessages() %>% suppressWarnings() # can avoid
-    EpiTraceAge(initial_matrix_clk) %>%suppressMessages() %>% suppressWarnings() -> res1 # speedup
+    # epitrace_obj_iterative <- EpiTrace_prepare_object(initial_peakSet_clk,initial_matrix_clk,celltype,ref_genome = 'hg19',non_standard_clock = T,clock_gr_list = iterative_clock_gr_list) %>%suppressMessages() %>% suppressWarnings()
+    if(parallel==T){
+      if(nrow(initial_matrix_clk)*ncol(initial_matrix_clk)>50000*2000){
+        batch_size=1000
+      }else{
+        batch_size=400 # size=2000,batch=NULL,subsamplesize=2000
+      }
+      EpiTraceAge(initial_matrix_clk,parallel=parallel,ncores=ncore_lim,size=batch_size,subsamplesize=batch_size) %>%suppressMessages() %>% suppressWarnings() -> res1
+    }else{
+      EpiTraceAge(initial_matrix_clk,parallel=F,ncores=1) %>%suppressMessages() %>% suppressWarnings() -> res1
+    }
+    
     colnames(res1)[2:4] <- c('EpiTraceAge_iterative','Accessibility_iterative','AccessibilitySmooth_iterative')
     epitrace_obj_original_metadata_update <- left_join(epitrace_obj_original_metadata,res1)
     epitrace_obj_iterative_age_estimated <- epitrace_obj_age_estimated
@@ -784,7 +822,10 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
 }
 
 
-
+  
+  
+  
+  
 
 
 
