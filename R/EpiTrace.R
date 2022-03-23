@@ -675,8 +675,9 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 #'     Age-association of ChrAcc peaks were performed to extract informative peaks. 
 #'     Iterative inference of cell age was performed with an updated clock reference containing 
 #'     the top peaks associating with age. 
-#'     The interation goes up to 10 times or when age derivation converge under given error limit. 
+#'     The interation goes up to given times or when age derivation converge under given error limit. 
 #'     Please use **all** peaks instead of **partial** peaks for this optimization. 
+#'     Generally this is a maximal extending approach to include all possible peaks correlated with age. 						      
 #'
 #' @details EpiTraceAge_Convergence (peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F,qualnum = 10,Z_cutoff=3,mean_error_limit=1e-2)
 #' @details Note: SC/Bulk could not be run at the same time as the normalization/filtering process kills single cells in the face of bulk data
@@ -695,7 +696,7 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 #' @param mean_error_limit a limit for the difference between cell ages derived from previous and current iteration. usually set to 1e-2 - 1e-6. 
 #' @param ncore_lim limit for using parallel cores in age-peak association, default 12 (set to 1 if no parallel is wanted)
 #' @param parallel whether use parallel multicore. In Rstudio, switch off to avoid problems
-#' @param iterative_time number of iterations. Usually 2-5 should be fine. 					      
+#' @param iterative_time number of iterations. Usually >10 should be fine. 					      
 #'
 #' @return a seurat object with EpiTraceAge, Accessibility, and AccessibilitySmoothed. '_iterative' are iteration scores, and '_Clock_initial' are initial mitosis clock scores. 
 #' @export
@@ -705,7 +706,7 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 
 EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50, lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":", "-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), non_standard_clock = F, qualnum = 10,Z_cutoff=3,mean_error_limit=1e-2,ncore_lim=12,parallel=T,iterative_time=2) {
   
-  # test
+  # debug
   
   # peakSet <- initiated_peaks
   # matrix <- initiated_mm
@@ -752,7 +753,9 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   na_vector_current <- is.na(age_current)
   # matrix %>% as.matrix() -> to_be_associated_mtx
   matrix -> to_be_associated_mtx
+  next_peakset <- iterative_GR_list$iterative
   
+  # res_list <- list() # debug
   while((sum(na_vector_current)<=sum(na_vector_previous)) & (mean_error >= mean_error_limit) & (iterative_count <= iterative_time)){
     message('Iterating ',iterative_count)
     age_previous <- age_current
@@ -784,7 +787,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
     findOverlaps(updated_peakset,original_clk_peakset)@from %>% unique -> peaks_overlap_with_clock
     updated_peakset$locus_type <- 'Others'
     updated_peakset$locus_type[peaks_overlap_with_clock] <- 'Chronology'
-    list('iterative'=updated_peakset[(abs(updated_peakset$scaled_correlation_of_EpiTraceAge)>Z_cutoff | updated_peakset$locus_type %ni% 'Others') %>% as.vector(),]) -> iterative_clock_gr_list # update new age-associated peaks correlated to mitosis score
+    list('iterative'=updated_peakset[(abs(updated_peakset$scaled_correlation_of_EpiTraceAge)>Z_cutoff | updated_peakset$locus_type %ni% 'Others') %>% as.vector() | updated_peakset$peakId %in% next_peakset$peakId,]) -> iterative_clock_gr_list # update new age-associated peaks correlated to mitosis score
     findOverlaps(peakSet,iterative_clock_gr_list[[1]])@from %>% unique() -> overlap_with_clk
     matrix[overlap_with_clk,] -> initial_matrix_clk
     peakSet[overlap_with_clk,] -> initial_peakSet_clk
@@ -808,22 +811,28 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
     # 
     # epitrace_obj_iterative_age_estimated <- RunEpiTraceAge(epitrace_obj_iterative)%>%suppressMessages() %>% suppressWarnings()
     age_current <- epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative
-    error <- age_current - age_previous
+    error <- (age_current - age_previous)/age_previous
+    tryCatch({
+      error[is.infinite(error)] <- 0
+    },error=function(e){message('')})
+    tryCatch({
+      error[is.na(error)] <- 1
+    },error=function(e){message('')})
     mean_error = mean(abs(error),na.rm=T)
     na_vector_current <- is.na(age_current)
+    age_current -> age_previous 
     epitrace_obj_iterative_age_estimated@misc$iterative_count <- iterative_count
     epitrace_obj_iterative_age_estimated@misc$mean_error <- mean_error
     message('mean_error = ',mean_error)
+    next_peakset <- iterative_clock_gr_list$iterative
+    # res_list[[iterative_count]] <- list('iterative_clock_gr_list'=iterative_clock_gr_list,mean_error=mean_error,age_current=age_current,iterative_count=iterative_count) # debug
   }
   epitrace_obj_iterative_age_estimated$EpiTraceAge_Clock_initial <- epitrace_obj_age_estimated@meta.data$EpiTraceAge_iterative
   epitrace_obj_iterative_age_estimated$Accessibility_initial <- epitrace_obj_age_estimated@meta.data$Accessibility_iterative
   epitrace_obj_iterative_age_estimated$AccessibilitySmooth_initial <- epitrace_obj_age_estimated@meta.data$AccessibilitySmooth_iterative
+  # return(list(epitrace_obj_iterative_age_estimated=epitrace_obj_iterative_age_estimated,res_list=res_list)) # debug
   return(epitrace_obj_iterative_age_estimated)
 }
-
-
-  
-  
   
   
 
