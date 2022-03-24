@@ -266,7 +266,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
 #'
 
 
-RunEpiTraceAge <- function(epitrace_object){
+RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=2000){
   # test
   # epitrace_object <- epitrace_obj
   availableAssays <- SeuratObject::Assays(epitrace_object)
@@ -284,7 +284,11 @@ RunEpiTraceAge <- function(epitrace_object){
       stop()
     }else{
       message('Estimating Age by EpiTraceAge...')
-      EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0])
+      if(parallel==F){
+        EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0])
+      }elese{
+        EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0],ncores = ncores,parallel=T,subsamplesize=subsamplesize)
+      }
     }
   }) -> res_list
   names(res_list) <- names(mtx_list)
@@ -759,7 +763,11 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   message('Finished prepare obj')
   epitrace_obj_original_metadata <- epitrace_obj@meta.data
   message('Estimating age for initialization...')
-  epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj) %>% suppressMessages() %>% suppressWarnings()
+  if(parallel==F){
+    epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj) %>% suppressMessages() %>% suppressWarnings()
+  }elese{
+    epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj,ncores=ncore_lim,parallel=T) %>% suppressMessages() %>% suppressWarnings()
+  }
   message('Finished age estimation')
   age_current <- epitrace_obj_age_estimated@meta.data$EpiTraceAge_iterative
   na_vector_current <- is.na(age_current)
