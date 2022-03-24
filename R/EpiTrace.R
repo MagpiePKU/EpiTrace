@@ -286,7 +286,7 @@ RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=20
       message('Estimating Age by EpiTraceAge...')
       if(parallel==F){
         EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0])
-      }elese{
+      }else{
         EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0],ncores = ncores,parallel=T,subsamplesize=subsamplesize)
       }
     }
@@ -765,7 +765,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   message('Estimating age for initialization...')
   if(parallel==F){
     epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj) %>% suppressMessages() %>% suppressWarnings()
-  }elese{
+  }else{
     epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj,ncores=ncore_lim,parallel=T) %>% suppressMessages() %>% suppressWarnings()
   }
   message('Finished age estimation')
