@@ -92,14 +92,13 @@ Init_Matrix <- function(cellname,peakname,matrix){
 #' @param sep_string the separation string for row names in input matrix to generate ranges. for example, 'chr1:1-2' is c(':','-')
 #' @param clock_gr_list the clockDML set, is a list of reference GRanges, each corresponds to a set of clock-like DML or DMR
 #' @param non_standard_clock whether is not using non-standard reference clockDML sets.
-#' @param run_reduction whether run reduction or not. Could be time saving to not run it if you only need age derivation. 
 #'
 #' @return a seurat object with all input peaks, as well as assays named 'x' for each clock set.
 #' @export
 #' @examples
 
 
-EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F,qualnum=10,run_reduction=T){
+EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F,qualnum=10){
   # test
   # initiated_peaks -> peakSet
   # singleCell_Hemapoietic_dat -> matrix
@@ -128,7 +127,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   }
   if(ref_genome != 'hg19' & ref_genome != 'hg38'){
     message('ref genome is neither hg19 nor hg38')
-    # stop()
+    stop()
   }
   if(non_standard_clock %in% F){
     if(sum(names(clock_gr_list) %in% c('Mitosis','Chronology','solo_WCGW'))!=3){
@@ -221,30 +220,22 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
     tempdf[[x]] <- Seurat::CreateAssayObject(counts = mtx2[,tempdf$cell],min.cells = 0,min.features = 0,check.matrix = F)
   }
   # 5. perform dimensionality reduction, feature selection, etc, on this final object
-  if(run_reduction==T){
-    tempdf <- Signac::RunTFIDF(tempdf)
-    tempdf <- Signac::FindTopFeatures(tempdf, min.cutoff = min.cutoff)
-    tempdf <- Signac::RunSVD(tempdf)
-    tempdf <- Seurat::RunUMAP(object = tempdf, reduction = 'lsi', dims = lsi_dim)
-    tempdf <- Seurat::FindNeighbors(object = tempdf, reduction = 'lsi', dims = lsi_dim,k.param = fn.k.param)
-    tempdf <- Seurat::FindClusters(object = tempdf, verbose = FALSE, algorithm = 3)
-    
-    # define identity
-    tempdf@meta.data %>% rownames -> final_cells
-    if(!is.null(celltype)){
-      tempdf@meta.data$celltype <- celltype[final_cells]
-      Idents(tempdf) <- celltype[final_cells]
-    }else{
-      tempdf@meta.data$celltype <- tempdf@meta.data$seurat_clusters
-      Idents(tempdf) <- tempdf$seurat_clusters
-    }
+  tempdf <- Signac::RunTFIDF(tempdf)
+  tempdf <- Signac::FindTopFeatures(tempdf, min.cutoff = min.cutoff)
+  tempdf <- Signac::RunSVD(tempdf)
+  tempdf <- Seurat::RunUMAP(object = tempdf, reduction = 'lsi', dims = lsi_dim)
+  tempdf <- Seurat::FindNeighbors(object = tempdf, reduction = 'lsi', dims = lsi_dim,k.param = fn.k.param)
+  tempdf <- Seurat::FindClusters(object = tempdf, verbose = FALSE, algorithm = 3)
+  
+  # define identity
+  tempdf@meta.data %>% rownames -> final_cells
+  if(!is.null(celltype)){
+    tempdf@meta.data$celltype <- celltype[final_cells]
+    Idents(tempdf) <- celltype[final_cells]
   }else{
-    if(!is.null(celltype)){
-      tempdf@meta.data$celltype <- celltype[final_cells]
-      Idents(tempdf) <- celltype[final_cells]
-    }
+    tempdf@meta.data$celltype <- tempdf@meta.data$seurat_clusters
+    Idents(tempdf) <- tempdf$seurat_clusters
   }
-
   return(tempdf)
 }
 
@@ -283,7 +274,6 @@ RunEpiTraceAge <- function(epitrace_object){
       message(paste('no data overlapping for clock reference set',x))
       stop()
     }else{
-      message('Estimating Age by EpiTraceAge...')
       EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0])
     }
   }) -> res_list
@@ -754,13 +744,11 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   findOverlaps(peakSet,original_clk_peakset)@from %>% unique() -> overlap_with_clk
   matrix[overlap_with_clk,] -> initial_matrix_clk
   peakSet[overlap_with_clk,] -> initial_peakSet_clk
-  message('Preparing obj...')
-  epitrace_obj <- EpiTrace_prepare_object(initial_peakSet_clk,initial_matrix_clk,celltype,ref_genome = 'hg19',non_standard_clock = T,clock_gr_list = iterative_GR_list,sep_string=sep_string,fn.k.param = fn.k.param,lsi_dim = lsi_dim,qualnum = qualnum,min.cutoff=min.cutoff,run_reduction=F)  # note here I do not switch the ref genome in prepare_obj, for simplicity. 
-  message('Finished prepare obj')
+  
+  epitrace_obj <- EpiTrace_prepare_object(initial_peakSet_clk,initial_matrix_clk,celltype,ref_genome = 'hg19',non_standard_clock = T,clock_gr_list = iterative_GR_list,sep_string=sep_string,fn.k.param = fn.k.param,lsi_dim = lsi_dim,qualnum = qualnum,min.cutoff=min.cutoff
+  )  # note here I do not switch the ref genome in prepare_obj, for simplicity. 
   epitrace_obj_original_metadata <- epitrace_obj@meta.data
-  message('Estimating age for initialization...')
   epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj) %>% suppressMessages() %>% suppressWarnings()
-  message('Finished age estimation')
   age_current <- epitrace_obj_age_estimated@meta.data$EpiTraceAge_iterative
   na_vector_current <- is.na(age_current)
   # matrix %>% as.matrix() -> to_be_associated_mtx
@@ -847,7 +835,6 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
 }
   
   
-
 
 
 
