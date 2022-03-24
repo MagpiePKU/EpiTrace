@@ -799,7 +799,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
     findOverlaps(updated_peakset,original_clk_peakset)@from %>% unique -> peaks_overlap_with_clock
     updated_peakset$locus_type <- 'Others'
     updated_peakset$locus_type[peaks_overlap_with_clock] <- 'Chronology'
-    list('iterative'=updated_peakset[(abs(updated_peakset$scaled_correlation_of_EpiTraceAge)>Z_cutoff | updated_peakset$locus_type %ni% 'Others') %>% as.vector() | updated_peakset$peakId %in% next_peakset$peakId,]) -> iterative_clock_gr_list # update new age-associated peaks correlated to mitosis score
+    list('iterative'=updated_peakset[(updated_peakset$scaled_correlation_of_EpiTraceAge < -1 * Z_cutoff | updated_peakset$locus_type %ni% 'Others') %>% as.vector() | updated_peakset$peakId %in% next_peakset$peakId,]) -> iterative_clock_gr_list # update new age-associated peaks correlated to mitosis score
     findOverlaps(peakSet,iterative_clock_gr_list[[1]])@from %>% unique() -> overlap_with_clk
     matrix[overlap_with_clk,] -> initial_matrix_clk
     peakSet[overlap_with_clk,] -> initial_peakSet_clk
@@ -823,7 +823,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
     # 
     # epitrace_obj_iterative_age_estimated <- RunEpiTraceAge(epitrace_obj_iterative)%>%suppressMessages() %>% suppressWarnings()
     age_current <- epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative
-    error <- (age_current - age_previous)/age_previous
+    error <- (age_current - age_previous)
     tryCatch({
       error[is.infinite(error)] <- 0
     },error=function(e){message('')})
