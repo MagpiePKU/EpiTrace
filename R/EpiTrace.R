@@ -873,7 +873,60 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
 
   
   
+#' age_associated_peak_test: function for calculating age-peak correlation
+#' @title age_associated_peak_test
+#'
+#' @description function for calculating age-peak correlation. 
+#'     					      
+#'
+#' @details age_associated_peak_test (matrix, age, parallel = F)
+#' @param matrix input count matrix of ATAC data, rows=GRanges and cols=samples/single cells.
+#' @param age a vector of cell ages.
+#' @param parallel whether use parallel, logical. 
+#' @return a dataframe with locus, correlation of peak height to age, and scaled correlation (Z value) 
+#' @export
+#' @examples
 
+age_associated_peak_test <- function (matrix, age, parallel = F) 
+{
+    
+    peaks_PT_dat <- matrix
+    age_vec <- age
+    remove_vec <- is.na(age_vec)
+    to_be_associated_mtx <- peaks_PT_dat
+    
+    if (sum(remove_vec) > 0) {
+        age_vec <- age_vec[!remove_vec]
+        to_be_associated_mtx <- to_be_associated_mtx[, !remove_vec]
+    }
+    if (parallel == F) {
+        res_list_cor <- lapply(c(1:ceiling(dim(to_be_associated_mtx)[1]/1000)), 
+            function(x) {
+                WGCNA::cor(x = t(to_be_associated_mtx[((1000 * 
+                  (x - 1)) + 1):min(dim(to_be_associated_mtx)[1], 
+                  1000 * x), ]), y = age_vec)
+            })
+    }
+    else {
+        res_list_cor <- parallel::mclapply(c(1:ceiling(dim(to_be_associated_mtx)[1]/1000)), 
+            mc.cores = 12, function(x) {
+                WGCNA::cor(x = t(to_be_associated_mtx[((1000 * 
+                  (x - 1)) + 1):min(dim(to_be_associated_mtx)[1], 
+                  1000 * x), ]), y = age_vec)
+            })
+    }
+    cor_res_PT <- res_list_cor %>% unlist
+    scaled_cor_res_PT <- scale(cor_res_PT)
+    if(!is.null(rownames(peaks_PT_dat))){
+        names(cor_res_PT) <- rownames(peaks_PT_dat)
+    }else{
+      rownames(peaks_PT_dat) <- 1:nrow(peaks_PT_dat)
+      names(cor_res_PT) <- rownames(peaks_PT_dat)
+    }
+    returndf <- data.frame(locus = names(cor_res_PT), correlation_of_EpiTraceAge = cor_res_PT, 
+        scaled_correlation_of_EpiTraceAge = scaled_cor_res_PT)
+    return(returndf)
+}
 
 
 
