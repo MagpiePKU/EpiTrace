@@ -38,8 +38,13 @@ plot(mitosis_tree)
 associated_res_HSC <- AssociationOfPeaksToAge(subset(epitrace_obj_age_estimated,celltype %in% 'HSC'))   
 ```
 
+### Updates   
+20220510   
+1. Iteration code has been updated. Please use EpiTraceAge_Convergence().   
 
- 
+
+### Citation
+Xinghuan Wang, Wan Jin, Gang Wang, Lingao Ju, Fangjin Chen, Kaiyu Qian, Yu Xiao and Yi Zhang, *Tracking single cell evolution via clock-like chromatin accessibility*, (2022) BIORXIV/2022/491736
  
 
  
