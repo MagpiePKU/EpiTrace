@@ -14,7 +14,7 @@
 
 
 ### Citation
-Xinghuan Wang, Wan Jin, Gang Wang, Lingao Ju, Fangjin Chen, Kaiyu Qian, Yu Xiao and Yi Zhang, *Tracking single cell evolution via clock-like chromatin accessibility*, (2022) BIORXIV/2022/491736      
+Xinghuan Wang, Wan Jin, Gang Wang, Lingao Ju, Fangjin Chen, Kaiyu Qian, Yu Xiao and Yi Zhang, *Tracking single cell evolution via clock-like chromatin accessibility*, (2022) bioRxiv 2022.05.12.491736; doi: https://doi.org/10.1101/2022.05.12.491736          
 
 
 
