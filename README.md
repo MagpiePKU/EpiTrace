@@ -9,8 +9,13 @@
 
 
 ### Updates   
+20220611   
+1. Added .rds files similar to the clock_gr_list data (for external loading).  
+2. Added %ni% function (taken from ArchR).      
+
 20220510   
 1. Iteration code has been updated. Please use EpiTraceAge_Convergence().   
+Example demos for EpiTraceAge_Convergence() would be avaiable soon.  
 
 
 ### Citation
