@@ -17,6 +17,14 @@
 # library(ArchR)
 # library(ggtree)
 
+#' Negated Value Matching
+#'
+#' This function is the reciprocal of %in%. See the match funciton in base R.
+#'
+#' @param x The value to search for in `table`.
+#' @param table The set of values to serve as the base for the match function.
+#' @export
+"%ni%" <- function(x, table) !(match(x, table, nomatch = 0) > 0)
 
 #' Init_Peakset: function for initiating the peak set object for EpiTrace.
 #' @title Init_Peakset
