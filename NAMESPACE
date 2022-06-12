@@ -8,6 +8,7 @@ export('RunEpiTracePhylogeny')
 export('AssociationOfPeaksToAge')
 export('EpiTraceAge_Convergence')
 export('age_associated_peak_test')
+export("%ni%")
 
 import(ccaPP)
 import(RColorBrewer)
