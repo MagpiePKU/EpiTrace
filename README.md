@@ -9,6 +9,9 @@
 
 
 ### Updates   
+20220910   
+1. Added mouse ClockDML sites (from Zhou et al 2022, PMID 35873672) for mouse single cell EpiTrace inference.  
+  
 20220611   
 1. Added .rds files similar to the clock_gr_list data (for external loading).  
 2. Added %ni% function (taken from ArchR).      
