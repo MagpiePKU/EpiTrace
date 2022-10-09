@@ -9,6 +9,13 @@
 
 
 ### Updates   
+20221008     
+1. Added frequently used non-human clockDML-like genomic regions as reference set for EpiTrace inference in these species.  
+- Drosophila (interesting one)  
+- Zebrafish  
+- Mouse   
+
+  
 20220910   
 1. Added mouse ClockDML sites (from Zhou et al 2022, PMID 35873672) for mouse single cell EpiTrace inference.  
   
