@@ -9,6 +9,15 @@
 
 
 ### Updates   
+
+20231011     
+1. Updated reference set:
+- G4 regions are functionally equivalent to species-specific ClockDML when available, and could extend the application of EpiTrace to organism without ClockDML.
+- G-quadruplex (G4) harboring sites (pGQS) are provided for human (hg19), mouse (mm10), zebrafish (drerio10), fly (dm6), nematode (ce11) and yeast (sc3) genomes.
+- Source of G4 regions: GSE110582 (mm10, dm6, ce11, sc3), GSE187007 (hg19), or G4Hunter prediction (drerio10).
+- G4Hunter source: https://github.com/LacroixLaurent/G4HunterPaperGit
+
+    
 20221021     
 1. Updated usage (see below).  
 - EpiTraceAge_Convergence function  
