@@ -101,13 +101,14 @@ Init_Matrix <- function(cellname,peakname,matrix){
 #' @param clock_gr_list the clockDML set, is a list of reference GRanges, each corresponds to a set of clock-like DML or DMR
 #' @param non_standard_clock whether is not using non-standard reference clockDML sets.
 #' @param run_reduction whether run reduction or not. Could be time saving to not run it if you only need age derivation. 
+#' @param remove_peaks_number cut-off of peaks that should be removed with less that this many samples. Default = 10. If your object is too small (like bulk ATAC), try reduce this. 
 #'
 #' @return a seurat object with all input peaks, as well as assays named 'x' for each clock set.
 #' @export
 #' @examples
 
 
-EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F,qualnum=10,run_reduction=T){
+EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F,qualnum=10,run_reduction=T,remove_peaks_number=10){
   # test
   # initiated_peaks -> peakSet
   # singleCell_Hemapoietic_dat -> matrix
@@ -154,7 +155,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   
   # 0.5. Filter the input matrix to a better one (try removing zero expression cells, and zero expression peaks)
   which(colSums(matrix)==0) %>% names -> remove_cells
-  which(rowSums(matrix)<10 | rowSums(matrix>0)<10) %>% names -> remove_peaks
+  which(rowSums(matrix)<remove_peaks_number | rowSums(matrix>0)<remove_peaks_number) %>% names -> remove_peaks
   logical_cell_vec <- colnames(matrix) %in% remove_cells
   logical_peak_vec <- rownames(matrix) %in% remove_peaks
   #peakSet,matrix,celltype
@@ -252,7 +253,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
       Idents(tempdf) <- celltype[final_cells]
     }
   }
-
+  
   return(tempdf)
 }
 
@@ -750,26 +751,52 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
         unique()
     initial_matrix_clk <- matrix[overlap_with_clk, ]
     initial_peakSet_clk <- peakSet[overlap_with_clk, ]
-    message("Preparing obj...")
-    epitrace_obj <- EpiTrace_prepare_object(initial_peakSet_clk,
-        initial_matrix_clk, celltype, ref_genome = "hg19", non_standard_clock = T,
-        clock_gr_list = iterative_GR_list, sep_string = sep_string,
-        fn.k.param = fn.k.param, lsi_dim = lsi_dim, qualnum = qualnum,
-        min.cutoff = min.cutoff, run_reduction = F)
-    message("Finished prepare obj")
-    epitrace_obj_original_metadata <- epitrace_obj@meta.data
-    message("Estimating age for initialization...")
-    if (parallel == F) {
-        epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj) %>%
-            suppressMessages() %>% suppressWarnings()
-    } else {
-        epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj,
-            ncores = ncore_lim, parallel = T) %>% suppressMessages() %>%
-            suppressWarnings()
+    message("Calculate iterative age")
+    if (parallel == T) {
+      message("Parallel run")
+      tryCatch({
+        nrow(initial_matrix_clk) %>% as.numeric() -> row_num 
+        ncol(initial_matrix_clk) %>% as.numeric() -> col_num
+        if ((row_num*col_num) >
+            (50000 * 2000)) {
+          batch_size = 400
+        }
+        else {
+          batch_size = 1000
+        }
+      },error=function(e){batch_size=400})
+      res1 <- EpiTraceAge(initial_matrix_clk, parallel = parallel,
+                          ncores = ncore_lim, size = batch_size, subsamplesize = batch_size) %>%
+        suppressMessages() %>% suppressWarnings()
     }
-    message("Finished age estimation")
-    age_current <- epitrace_obj_age_estimated@meta.data$EpiTraceAge_iterative
-    names(age_current) <- epitrace_obj_age_estimated@meta.data$cell
+    else {
+      message("Single thread run")
+      res1 <- EpiTraceAge(initial_matrix_clk, parallel = F,
+                          ncores = 1) %>% suppressMessages() %>% suppressWarnings()
+    }
+    colnames(res1)[2:4] <- c("EpiTraceAge_iterative", "Accessibility_iterative",
+                             "AccessibilitySmooth_iterative")
+    message("Update dataframe")
+    epitrace_obj_original_metadata_update <- left_join(epitrace_obj_original_metadata,
+                                                       res1)
+    epitrace_obj_iterative_age_estimated <- epitrace_obj_age_estimated
+    rownames(epitrace_obj_original_metadata_update) <- rownames(epitrace_obj_original_metadata)
+    epitrace_obj_iterative_age_estimated@meta.data <- epitrace_obj_original_metadata_update
+    age_current <- epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative
+    cell_current <- epitrace_obj_iterative_age_estimated$cell[!is.na(epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative)]
+    names(age_current) <- cell_current
+    error <- (age_current - age_previous[cell_current])
+    tryCatch({
+      error[is.infinite(error)] <- 0
+    }, error = function(e) {
+      message("")
+    })
+    tryCatch({
+      error[is.na(error)] <- 1
+    }, error = function(e) {
+      message("")
+    })
+    mean_error = mean(abs(error), na.rm = T)
     na_vector_current <- is.na(age_current)
     next_peakset <- iterative_GR_list$iterative
     cell_current <- epitrace_obj_age_estimated@meta.data$cell[!is.na(epitrace_obj_age_estimated@meta.data$EpiTraceAge_iterative)]
