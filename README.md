@@ -1,5 +1,9 @@
 # EpiTrace
  Computing cell age with bulk and single-cell ATAC-seq data   
+
+ EpiTrace takes an approximation approach to infer single cell age from single cell ATAC data. It infers single cell age by measuring the total opened reference genomic loci. On these loci, heterogeneity of chromatin accessibility decreases as the cell ages.   
+
+ EpiTrace firstly algorithmically determine a set of tool genomic loci, on which the total chromatin accessibility (reads) shows maximal correlation to the total opened reference genomic loci. Then, the total chromatin accessibility on this set of tool genomic loci are used as an intermediate tool variable to approximate cell age.  
  
  For example code, see vignettes/Hematopoiesis_2016_demo.notebook.Rmd or vignettes/Hematopoiesis_2016_demo.notebook.nb.html  
 
@@ -119,7 +123,7 @@ easyLift::easyLiftOver(plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_li
 ```
  
 ### Creating non-human reference dataset on non-human remote species (e.g. invertebrates)    
-Example: Human to Drosophila    
+Example: Human to Drosophila (GSE190149)      
 ```
 library(dplyr)
 library(tidyr)
@@ -172,5 +176,10 @@ fly_dat_ranges_anno_df <- fly_dat_ranges_anno@anno %>% as.data.frame()
 fly_dat_ranges_anno_df$clock_hit <- ifelse(abs(fly_dat_ranges_anno_df$distanceToTSS)<100 & fly_dat_ranges_anno_df$geneId %in% human_clock_hg19_anno_tss_mappable_df$Dmel_gene_ID, 'clock','non_clock')
 fly_dat_ranges_putative_clock <- fly_dat_ranges[fly_dat_ranges_anno_df$clock_hit %in% 'clock',]
 ```
+
+### Note for users  
+
+20231201
+- Please note that EpiTrace takes an approximation approach to infer single cell age. In its current form, the estimation of tool genomic loci during first step of EpiTrace algorithm might be affected by the data. Particularly, when single cell composition is biased in the dataset, for example, to have 99% of one type of cell and only 1% of others, then the measurement could be incorrect. We encourage users to use balanced dataset for cell age estimation, for example down-sampling the over-represented cells.      
 
 
