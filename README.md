@@ -11,44 +11,6 @@
  
  
 
-
-### Updates   
-
-20231011     
-1. Updated reference set:
-- G4 regions are functionally equivalent to species-specific ClockDML when available, and could extend the application of EpiTrace to organism without ClockDML.
-- G-quadruplex (G4) harboring sites (pGQS) are provided for human (hg19), mouse (mm10), zebrafish (drerio10), fly (dm6), nematode (ce11) and yeast (sc3) genomes.
-- Source of G4 regions: GSE110582 (mm10, dm6, ce11, sc3), GSE187007 (hg19), or G4Hunter prediction (drerio10).
-- G4Hunter source: https://github.com/LacroixLaurent/G4HunterPaperGit
-
-    
-20221021     
-1. Updated usage (see below).  
-- EpiTraceAge_Convergence function  
-- Using the non-human reference putative clock-like loci   
-- Determining non-human reference putative clock-like loci in vertebrates   
-- Determining non-human reference putative clock-like loci in remote species (for example, invertebrates)    
-
-
-20221008     
-1. Added frequently used non-human clockDML-like genomic regions as reference set for EpiTrace inference in these species.  
-- Drosophila (interesting one)  
-- Zebrafish  
-- Mouse   
-
-  
-20220910   
-1. Added mouse ClockDML sites (from Zhou et al 2022, PMID 35873672) for mouse single cell EpiTrace inference.  
-  
-20220611   
-1. Added .rds files similar to the clock_gr_list data (for external loading).  
-2. Added %ni% function (taken from ArchR).      
-
-20220510   
-1. Iteration code has been updated. Please use EpiTraceAge_Convergence().   
-Example demos for EpiTraceAge_Convergence() would be avaiable soon.  
-
-
 ### Citation
 Xinghuan Wang, Wan Jin, Gang Wang, Lingao Ju, Fangjin Chen, Kaiyu Qian, Yu Xiao and Yi Zhang, *Tracking single cell evolution via clock-like chromatin accessibility*, (2022) bioRxiv 2022.05.12.491736; doi: https://doi.org/10.1101/2022.05.12.491736          
 
@@ -181,5 +143,46 @@ fly_dat_ranges_putative_clock <- fly_dat_ranges[fly_dat_ranges_anno_df$clock_hit
 
 20231201
 - Please note that EpiTrace takes an approximation approach to infer single cell age. In its current form, the estimation of tool genomic loci during first step of EpiTrace algorithm might be affected by the data. Particularly, when single cell composition is biased in the dataset, for example, to have 99% of one type of cell and only 1% of others, then the measurement could be incorrect. We encourage users to use balanced dataset for cell age estimation, for example down-sampling the over-represented cells.      
+
+
+
+
+
+
+### Updates   
+
+20231011     
+1. Updated reference set:
+- G4 regions are functionally equivalent to species-specific ClockDML when available, and could extend the application of EpiTrace to organism without ClockDML.
+- G-quadruplex (G4) harboring sites (pGQS) are provided for human (hg19), mouse (mm10), zebrafish (drerio10), fly (dm6), nematode (ce11) and yeast (sc3) genomes.
+- Source of G4 regions: GSE110582 (mm10, dm6, ce11, sc3), GSE187007 (hg19), or G4Hunter prediction (drerio10).
+- G4Hunter source: https://github.com/LacroixLaurent/G4HunterPaperGit
+
+    
+20221021     
+1. Updated usage (see below).  
+- EpiTraceAge_Convergence function  
+- Using the non-human reference putative clock-like loci   
+- Determining non-human reference putative clock-like loci in vertebrates   
+- Determining non-human reference putative clock-like loci in remote species (for example, invertebrates)    
+
+
+20221008     
+1. Added frequently used non-human clockDML-like genomic regions as reference set for EpiTrace inference in these species.  
+- Drosophila (interesting one)  
+- Zebrafish  
+- Mouse   
+
+  
+20220910   
+1. Added mouse ClockDML sites (from Zhou et al 2022, PMID 35873672) for mouse single cell EpiTrace inference.  
+  
+20220611   
+1. Added .rds files similar to the clock_gr_list data (for external loading).  
+2. Added %ni% function (taken from ArchR).      
+
+20220510   
+1. Iteration code has been updated. Please use EpiTraceAge_Convergence().   
+Example demos for EpiTraceAge_Convergence() would be avaiable soon.  
 
 
