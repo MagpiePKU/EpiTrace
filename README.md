@@ -7,7 +7,7 @@
  
  For example code, see vignettes/Hematopoiesis_2016_demo.notebook.Rmd or vignettes/Hematopoiesis_2016_demo.notebook.nb.html  
 
- Maintainer: Zhang Yi <synapse@pku.edu.cn>      
+ Maintainer: Zhang Yi <c.sinensis@gmail.com>      
  
  
 
