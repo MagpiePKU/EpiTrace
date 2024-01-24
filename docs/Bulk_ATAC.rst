@@ -1,14 +1,13 @@
-Bulk ATAC example
------------------
+Most simple example with bulk ATAC
+----------------------------------
 
-In this tutorial, we will show you a brief guide how to run EpiTrace analysis on bulk ATAC-seq, with a demo dataset from ``Corces 2016``.   
-These demo data are from FACS-sorted pure hematopoietic cell populations and sequenced by ATAC-seq.   
-Similar code works with single cell dataset.  
+In this tutorial, we will show you a brief guide how to run EpiTrace analysis. We do this by using a tiny demo dataset of bulk ATAC-seq from :cite:p:`Corces2016`.   
+These demo data are from FACS-sorted pure hematopoietic cell populations and sequenced by ATAC-seq. Similar code works with single cell dataset.  
 
-An important note is that EpiTrace age is reversed between bulk and single cell datasets. For a detailed technical explanation, please see ``Xiao 2022``. At the moment, please remember that higher age corresponds to **lower** EpiTrace age in bulk ATAC datasets, and **higher** EpiTrace age in single cell ATAC datasets. 
 
-**Note this demo is an updated version from original *2022* version by using iterative updating algorithm**. We would suggest users to use the iterative updating algorithm regardless of whether it is bulk or single-cell ATAC-seq data.  
+**Note this demo is an updated version from old *2022* version by using iterative updating algorithm**. 
 
+We would suggest users to use the iterative updating algorithm regardless of whether it is bulk or single-cell ATAC-seq data.  
 
 First of all, the input data for EpiTrace are: 
 
@@ -20,6 +19,8 @@ First of all, the input data for EpiTrace are:
 You also need to choose a reference clock-like loci for age estimation. 
 Currently, the package provides a human ClockDML dataset as reference. 
 Alternative datasets could be chosen by you.  
+
+To interpret the data, an important note is that EpiTrace age is reversed between bulk and single cell datasets. For a detailed technical explanation, please see :cite:p:`Xiao2022`. At the moment, please remember that higher age corresponds to **lower** EpiTrace age in bulk ATAC datasets, and **higher** EpiTrace age in single cell ATAC datasets. 
 
 
 Step 1. Initialize environment 
@@ -59,11 +60,11 @@ The package provided ``clock_gr_list`` is a list of GRanges, each corresponds to
 
 There are three sets of human clockDML that provided in `clock_gr_list`:  
 
-`Mitosis`: 616 clock-like DML compiled from papers of ``Yang et al 2016``, ``Teschendorff 2020``, and ``Youn and Wang 2018``.     
+`Mitosis`: 616 clock-like DML compiled from papers of :cite:p:`Yang2016` and :cite:p:`Youn2018`.     
 
 `Chronology`: 125625 clock-like DML/DMR computed from genome-wide bisulfite capture sequencing data and a compilation of 450k methyl-array data, removing the ones that overlaps with Mitosis dataset.     
 
-`solo_WCGW`: 1669720 solitary WCGW motif in partial methylated domain, from ``Zhou et al 2018``. This is just for comparison purpose and in general not used in age estimation.   
+`solo_WCGW`: 1669720 solitary WCGW motif in partial methylated domain, from :cite:p:`Zhou2018`. This is just for comparison purpose and in general not used in age estimation.   
 
 
 Step 3. Initialize peak sets 
@@ -119,23 +120,5 @@ Note that association is most meaningful for a sub-population or a lineage.::
     (associated_res_myeloid) %>% na.omit() %>% tail(5) 
 
 This shows the promoter of a monocyte-specific transcription factor MZB1 increases over age, in this lineage.  
-
-
-
-**Reference**:   
-
-Zhou W, et al. DNA methylation loss in late-replicating domains is linked to mitotic cell division. Nat Genet. 2018 Apr;50(4):591-602. doi: 10.1038/s41588-018-0073-4
-
-Yang Z, et al. Correlation of an epigenetic mitotic clock with cancer risk. Genome Biol. 2016 Oct 3;17(1):205. doi: 10.1186/s13059-016-1064-3
-
-Teschendorff AE. A comparison of epigenetic mitotic-like clocks for cancer risk prediction. Genome Med. 2020 Jun 24;12(1):56. doi: 10.1186/s13073-020-00752-3 
-
-Youn A, Wang S. The MiAge Calculator: a DNA methylation-based mitotic age calculator of human tissue types. Epigenetics. 2018;13(2):192-206. doi: 10.1080/15592294.2017.1389361 
-
-Horvath S. DNA methylation age of human tissues and cell types. Genome Biol. 2013;14(10):R115. doi: 10.1186/gb-2013-14-10-r115 
-
-Corces MR, et al. Lineage-specific and single-cell chromatin accessibility charts human hematopoiesis and leukemia evolution. Nat Genet. 2016 Oct;48(10):1193-203. doi: 10.1038/ng.3646
-
-Xiao Y, et al. Tracking single cell evolution via clock-like chromatin accessibility. BioRxiv. 2022. doi: 10.1101/2022.05.12.491736
 
 
