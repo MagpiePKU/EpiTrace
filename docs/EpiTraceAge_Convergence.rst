@@ -22,5 +22,11 @@ Input:
 - iterative_time: maximal iteration time. 
 
 
-Output: a Seurat object with ages annotated in its metadata.      
+Output: a Seurat object with ages annotated in its metadata. 
+
+Main informations added to the meta.data of the Seurat objects are: 
+
+- EpiTraceAge_Clock_initial: the age estimated using only reference clock-like loci 
+- EpiTraceAge_iterative: the age estimated using reference + newly-included (putative sample-specific) clock-like loci 
+
 
