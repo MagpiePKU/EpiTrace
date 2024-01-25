@@ -3,7 +3,7 @@
 EpiTrace - Estimating cell age with bulk and single-cell ATAC-seq
 ============================================================
 
-.. image:: https://github.com/MagpiePKU/EpiTrace_readthedocs/assets/7695551/dc485460-4d46-4a41-a649-ad89b43dcc4f
+.. image:: https://github.com/MagpiePKU/EpiTrace/assets/7695551/b1104b09-bbbb-420f-bac0-8241e828e2bc
    :width: 300px
    :align: left
 
@@ -69,9 +69,11 @@ Support
 ^^^^^^^
 Have a question or would like to start a new discussion? Found a bug or would like to see a feature implemented? Feel free to submit an
 `issue <https://github.com/MagpiePKU/EpiTrace/issues/new>`_.
-Your help to improve EpiTrace is highly appreciated.
+Your help to improve EpiTrace is highly appreciated. 
 
-This introduction website is heavily copied from the scVelo readthedocs site. 
+Planned updates
+^^^^^^^^^^^^^^^
+Tutorial on (1) using G-quadruplex as reference clock-like loci, and (2) timing mutational event during oncogenesis.  
 
 
 .. toctree::
@@ -91,6 +93,8 @@ This introduction website is heavily copied from the scVelo readthedocs site.
    :hidden:
 
    Bulk_ATAC
+   scATAC_cIPSC
+   scATAC_drosophila
    mtscATAC_CD34
 
 

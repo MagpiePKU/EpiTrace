@@ -1,8 +1,8 @@
 Most simple example with bulk ATAC
 ----------------------------------
 
-In this tutorial, we will show you a brief guide how to run EpiTrace analysis. We do this by using a tiny demo dataset of bulk ATAC-seq from :cite:p:`Corces2016`.   
-These demo data are from FACS-sorted pure hematopoietic cell populations and sequenced by ATAC-seq. Similar code works with single cell dataset.  
+In this tutorial, we will show you a first brief guide how to run EpiTrace analysis. We do this by using a tiny demo dataset of bulk ATAC-seq from :cite:p:`Corces2016`.   
+These demo data are from FACS-sorted pure hematopoietic cell populations and sequenced by ATAC-seq. 
 
 
 **Note this demo is an updated version from old *2022* version by using iterative updating algorithm**. 
@@ -17,8 +17,7 @@ First of all, the input data for EpiTrace are:
 
 
 You also need to choose a reference clock-like loci for age estimation. 
-Currently, the package provides a human ClockDML dataset as reference. 
-Alternative datasets could be chosen by you.  
+Currently, the package provides a human clock-like differential methylated loci dataset as reference. Alternative datasets could be chosen by user.  
 
 To interpret the data, an important note is that EpiTrace age is reversed between bulk and single cell datasets. For a detailed technical explanation, please see :cite:p:`Xiao2022`. At the moment, please remember that higher age corresponds to **lower** EpiTrace age in bulk ATAC datasets, and **higher** EpiTrace age in single cell ATAC datasets. 
 
@@ -119,6 +118,5 @@ Note that association is most meaningful for a sub-population or a lineage.::
     associated_res_myeloid <- arrange(associated_res_myeloid,scaled_correlation_of_EpiTraceAge)
     (associated_res_myeloid) %>% na.omit() %>% tail(5) 
 
-This shows the promoter of a monocyte-specific transcription factor MZB1 increases over age, in this lineage.  
 
 

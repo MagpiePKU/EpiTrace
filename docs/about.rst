@@ -8,9 +8,13 @@ Introducing a time domain into these scATAC data would enable studying dynamic p
 
 The replication-associated chromatin accessibility change
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: https://github.com/MagpiePKU/EpiTrace/assets/7695551/8bdca538-7530-4535-8193-e6d517ae6c81
+   :width: 250px
+   :align: left
+
 Theoretically, the trajectory of epigenome reprogramming during cell state transformation, either in aging or development, could be decomposed into two orthogonal processes: cell differentiation (or specification) and cell replication. While the cell differentiation components might be orthogonal (*distinct*) between cell types or organisms, there must be a similar cell replication component. Otherwise, there would not be a common aging-associated epigenomic biomarker, which is contradictory to our and other groups’ findings. 
 
-We have determined that DNA G-quadruplex stimulates both RNA transcription and DNA replication, inducing local transcription-replication interaction which delays genome replication. The delayed genome replication impairs epigenomic modification transmission from parental to the newly synthesized daughter genome, resulting in *DNA hypomethylation* and loss of heterochromatin. This creates a more permissive environment for G-quadruplex formation in the subsequent generation. As a result, DNA G-quadruplexes gradually accumulate across mitosis to erode the local epigenome. Accompanying with this, chromatin around putative G-quadruplex sequences gradually *opens* across replication :cite:p:`Jin2024`.  
+We have determined that DNA G-quadruplex stimulates both RNA transcription and DNA replication, inducing local transcription-replication interaction which delays genome replication. The delayed genome replication impairs epigenomic modification transmission from parental to the newly synthesized daughter genome, resulting in *DNA hypomethylation* and loss of heterochromatin. This creates a more permissive environment for G-quadruplex formation in the subsequent generation. As a result, DNA G-quadruplexes gradually accumulate across mitosis to erode the local epigenome. Accompanying with this, chromatin around putative G-quadruplex sequences gradually *opens* across replication. Please refer to :cite:p:`Jin2024` for the details on this molecular mechanism.  
 
 
 The phenotypic-neutral, reference clock-like loci
@@ -22,12 +26,17 @@ On the single cell scale, reduction of global heterogeneity of chromatin accessi
 
 Identifying cell-type-specific clock-like loci
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 For a particular cell lineage, the epigenomic shift during aging could be cell-type dependent. Furthermore, between different cell clones, the epigenomic shift on similar putative clock-like loci could be stochastic. Nevertheless, we can still infer the cell-type-specific clock-like loci by correlating their chromatin accessibility to the approximated cell age. EpiTrace does so by: 
 
 - compute the correlation of chromatin accessibility of each loci to single cell age estimation (initially estimated by using the reference clock-like loci); 
 - search for loci that shows best correlation; 
 - combine these loci with the previous reference clock-like loci to build a new set of reference; 
 - estimate single cell age using the new set of reference loci. 
+
+.. image:: https://github.com/MagpiePKU/EpiTrace/assets/7695551/bf9c031a-e9ee-4714-bf47-b3a309935c66
+   :width: 600px
+   :align: center
 
 This process is iterated to update the reference loci until the estimated single cell age converges. In practice, we find ~10 iterations usually is sufficient to give satisfactory result. 
 
