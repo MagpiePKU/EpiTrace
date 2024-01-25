@@ -41,6 +41,7 @@ extensions = [
 ]
 
 bibtex_bibfiles = ['references.bib']
+bibtex_reference_style = "author year"
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
@@ -64,9 +65,14 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 #
 #html_theme = 'alabaster'
 html_theme = 'sphinx_rtd_theme'
-
+github_repo = 'EpiTrace'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# TODO: Add docstrings
+def setup(app):
+    """TODO."""
+    app.add_css_file("custom.css")
