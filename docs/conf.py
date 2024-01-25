@@ -41,7 +41,7 @@ extensions = [
 ]
 
 bibtex_bibfiles = ['references.bib']
-bibtex_reference_style = "author year"
+bibtex_reference_style = "author_year"
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
