@@ -8,7 +8,7 @@ Introducing a time domain into these scATAC data would enable studying dynamic p
 
 The replication-associated chromatin accessibility change
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: https://github.com/MagpiePKU/EpiTrace/assets/7695551/8bdca538-7530-4535-8193-e6d517ae6c81
+.. image:: /_static/DecomposeVector.png
    :width: 250px
    :align: left
 
@@ -34,7 +34,7 @@ For a particular cell lineage, the epigenomic shift during aging could be cell-t
 - combine these loci with the previous reference clock-like loci to build a new set of reference; 
 - estimate single cell age using the new set of reference loci. 
 
-.. image:: https://github.com/MagpiePKU/EpiTrace/assets/7695551/bf9c031a-e9ee-4714-bf47-b3a309935c66
+.. image:: /_static/EpiTraceIterAlgorithm.png
    :width: 600px
    :align: center
 
