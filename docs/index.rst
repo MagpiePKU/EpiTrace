@@ -94,8 +94,10 @@ Tutorial on (1) using G-quadruplex as reference clock-like loci, and (2) timing 
    :maxdepth: 1
    :hidden:
 
+   tutorial_overview
    Bulk_ATAC
    scATAC_cIPSC
+   MSscATAC
    scATAC_drosophila
    mtscATAC_CD34
 

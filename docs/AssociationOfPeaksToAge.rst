@@ -3,7 +3,8 @@ AssociationOfPeaksToAge
 
 Input: an age-determined EpiTrace object.  
 
-Output: a dataframe consisting each peak (rows), their ID, and age association to their open-ness.
+Output: a dataframe consisting name of each peak (rows), unscaled correlation coefficient (age-x-peak), and scaled correlation coefficient (age-x-peak).
+
 
 
   

@@ -12,7 +12,7 @@ Input:
 
 Output: an epitrace_object with cell ages determined. This is a Seurat object. In the object, most important results are:
 
-- EpiTraceAge_xxxx. EpiTrace result from a particular (xxxx) reference clock-like loci. 
+- EpiTraceAge_xxxx. EpiTrace result from a particular (xxxx) reference clock-like loci. By default it runs for individual reference clock-like loci in `clock_gr_list`. The function is more internal and not recommended for application use. For application, we suggest directly using `EpiTraceAge_Convergence`. 
 
 
 

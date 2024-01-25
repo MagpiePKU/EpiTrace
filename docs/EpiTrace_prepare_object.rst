@@ -19,7 +19,8 @@ Input:
 
 Output: an "epitrace" Seurat object to be used in downstream analysis. 
 
-**NOTE** Do not use this function unless you intend to do the analysis step-by-step manually. The iterative updating function does not need object preparation at initial.  
+**NOTE** Do not use this function unless you intend to do the analysis step-by-step manually. The iterative updating function does not need object preparation at initial. The function is more internal and not recommended for application use. For application, we suggest directly using `EpiTraceAge_Convergence`. 
+ 
 
   
 

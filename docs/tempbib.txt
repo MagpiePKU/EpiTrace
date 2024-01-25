@@ -1,0 +1,14 @@
+﻿@article{RN49,
+   author = {Zhou, W. and Hinoue, T. and Barnes, B. and Mitchell, O. and Iqbal, W. and Lee, S. M. and Foy, K. K. and Lee, K. H. and Moyer, E. J. and VanderArk, A. and Koeman, J. M. and Ding, W. and Kalkat, M. and Spix, N. J. and Eagleson, B. and Pospisilik, J. A. and Szabo, P. E. and Bartolomei, M. S. and Vander Schaaf, N. A. and Kang, L. and Wiseman, A. K. and Jones, P. A. and Krawczyk, C. M. and Adams, M. and Porecha, R. and Chen, B. H. and Shen, H. and Laird, P. W.},
+   title = {DNA methylation dynamics and dysregulation delineated by high-throughput profiling in the mouse},
+   journal = {Cell Genom},
+   volume = {2},
+   number = {7},
+   ISSN = {2666-979X (Electronic)
+2666-979X (Linking)},
+   DOI = {10.1016/j.xgen.2022.100144},
+   url = {https://www.ncbi.nlm.nih.gov/pubmed/35873672},
+   year = {2022},
+   type = {Journal Article}
+}
+
