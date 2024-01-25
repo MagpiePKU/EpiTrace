@@ -3,7 +3,7 @@
 EpiTrace - Estimating cell age with bulk and single-cell ATAC-seq
 ============================================================
 
-.. image:: /_static/Cortex.svg
+.. image:: _static/Cortex.svg
    :width: 300px
    :align: left
 
