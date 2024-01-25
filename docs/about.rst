@@ -8,7 +8,7 @@ Introducing a time domain into these scATAC data would enable studying dynamic p
 
 The replication-associated chromatin accessibility change
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: _static/DecomposeVector.png
+.. image:: _static/DecomposeVector.svg
    :width: 250px
    :align: left
 
