@@ -5,7 +5,9 @@
 
  EpiTrace firstly algorithmically determine a set of tool genomic loci, on which the total chromatin accessibility (reads) shows maximal correlation to the total opened reference genomic loci. Then, the total chromatin accessibility on this set of tool genomic loci are used as an intermediate tool variable to approximate cell age.  
  
- EpiTrace documentation is now on `readthedocs`. For descriptions, function references, and tutorials, visit https://epitrace.readthedocs.io 
+ EpiTrace documentation is now on `readthedocs`. 
+ 
+ For descriptions, function references, and tutorials, visit https://epitrace.readthedocs.io 
 
  Maintainer: Zhang Yi <c.sinensis@gmail.com>      
 
