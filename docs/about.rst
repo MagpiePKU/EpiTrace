@@ -34,7 +34,7 @@ For a particular cell lineage, the epigenomic shift during aging could be cell-t
 - combine these loci with the previous reference clock-like loci to build a new set of reference; 
 - estimate single cell age using the new set of reference loci. 
 
-.. image:: _static/EpiTraceIterAlgorithm.png
+.. image:: _static/EpiTraceIterAlgorithm.svg
    :width: 600px
    :align: center
 
