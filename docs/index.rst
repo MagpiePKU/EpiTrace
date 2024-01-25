@@ -15,7 +15,7 @@ EpiTrace - Estimating cell age with bulk and single-cell ATAC-seq
 
 
 EpiTrace's key applications
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------
 - estimate the mitosis age of single cell or bulk sample.  
 - identify age-dependent biological events including shifts in chromatin accessibility, transcription factor activity, and transcriptomic changes. 
 - timing developmental and mutational events. 
@@ -23,7 +23,7 @@ EpiTrace's key applications
 
 
 Citing EpiTrace
-^^^^^^^^^^^^^^^
+---------------
 
 If you include or rely on EpiTrace when publishing research, please adhere to the
 following citation guide:
@@ -66,13 +66,14 @@ If you use the *G-quadruplex region* for cell/sample age estimation, cite
 
 
 Support
-^^^^^^^
+-------
 Have a question or would like to start a new discussion? Found a bug or would like to see a feature implemented? Feel free to submit an
 `issue <https://github.com/MagpiePKU/EpiTrace/issues/new>`_.
 Your help to improve EpiTrace is highly appreciated. 
 
+
 Planned updates
-^^^^^^^^^^^^^^^
+---------------
 Tutorial on (1) using G-quadruplex as reference clock-like loci, and (2) timing mutational event during oncogenesis.     
 
 
