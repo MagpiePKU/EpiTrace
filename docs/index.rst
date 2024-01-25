@@ -73,7 +73,7 @@ Your help to improve EpiTrace is highly appreciated.
 
 Planned updates
 ^^^^^^^^^^^^^^^
-Tutorial on (1) using G-quadruplex as reference clock-like loci, and (2) timing mutational event during oncogenesis.  
+Tutorial on (1) using G-quadruplex as reference clock-like loci, and (2) timing mutational event during oncogenesis.     
 
 
 .. toctree::
@@ -84,6 +84,7 @@ Tutorial on (1) using G-quadruplex as reference clock-like loci, and (2) timing 
    about
    installation
    release_notes
+   using_notes
    references
 
 
