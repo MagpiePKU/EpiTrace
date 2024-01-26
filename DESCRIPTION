@@ -26,20 +26,11 @@ Imports:
     WGCNA (>= 1.7),
     stringr,
     parallel,
-    sva,
-    ccaPP,
-    HiClimR,
     nnls,
     ggtree,
     ape,
-    reticulate,
     ggpubr
 Remotes: caleblareau/easyLift
 Suggests:
-    ArchR,
-    tradeSeq,
-    ChIPseeker,
-    knitr,
-    rmarkdown
 VignetteBuilder: knitr
 
