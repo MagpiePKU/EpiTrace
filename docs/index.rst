@@ -14,12 +14,14 @@ EpiTrace - Estimating cell age from single-cell ATAC data
 
 
 
+
+
 EpiTrace's key applications
 ---------------------------
 - estimate the mitosis age of single cell or bulk sample.  
 - identify age-dependent biological events including shifts in chromatin accessibility, transcription factor activity, and transcriptomic changes. 
 - timing developmental and mutational events. 
-- infer the total ATAC or ChIP-seq signal over a given reference genomic region set. 
+
 
 
 Citing EpiTrace

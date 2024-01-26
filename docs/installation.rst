@@ -7,7 +7,9 @@ EpiTrace requires R 4.0 or later. The current recommended environment is R 4.1.3
 Install EpiTrace from Github_ using::
 
     library(devtools)   
-    devtools::install_github('MagpiePKU/EpiTrace')  
+    devtools::install_github('MagpiePKU/EpiTrace',dependencies=TRUE)  
+
+If you encountered any issue in installation, please let us know by flagging up an issue `here in Github<https://github.com/MagpiePKU/EpiTrace/issues/new>`_.). 
 
 
 Dependencies
@@ -66,7 +68,7 @@ Dependencies
 	[34] EpiTrace_0.0.0.9000
 
 
-If you run into issues, do not hesitate to approach us or raise a `GitHub issue`_.
+Again, if you run into issues in installation or using, do not hesitate to approach us or raise a `GitHub issue`_.
 
 .. _Github: https://github.com/MagpiePKU/EpiTrace
 .. _`Github issue`: https://github.com/MagpiePKU/EpiTrace/issues/new
