@@ -9,7 +9,7 @@ Install EpiTrace from Github_ using::
     library(devtools)   
     devtools::install_github('MagpiePKU/EpiTrace',dependencies=TRUE)  
 
-If you encountered any issue in installation, please let us know by flagging up an issue `here in Github<https://github.com/MagpiePKU/EpiTrace/issues/new>`_.). 
+If you encountered any issue in installation, please let us know by flagging up an issue `here in Github <https://github.com/MagpiePKU/EpiTrace/issues/new>`_. 
 
 
 Dependencies
