@@ -32,11 +32,11 @@ Imports:
     ggpubr,
     Matrix,
     matrixStats,
-    sparseMatrixStats,
     grDevices
 Remotes: 
     caleblareau/easyLift,
-    sa-lee/plyranges
+    sa-lee/plyranges,
+    const-ae/sparseMatrixStats
 Suggests:
 VignetteBuilder: knitr
 
