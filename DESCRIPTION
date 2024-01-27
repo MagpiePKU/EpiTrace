@@ -30,8 +30,7 @@ Imports:
     ape,
     ggpubr,
     Matrix,
-    matrixStats,
-    grDevices
+    matrixStats
 Remotes: 
     caleblareau/easyLift,
     sa-lee/plyranges,
