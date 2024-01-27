@@ -19,7 +19,6 @@ Imports:
     RColorBrewer,
     ggplot2,
     Seurat (>=4),
-    Seurat (<5),
     SeuratObject, 
     Signac (>= 1.5.0),
     GenomicRanges,
