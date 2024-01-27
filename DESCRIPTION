@@ -30,11 +30,11 @@ Imports:
     ape,
     ggpubr,
     Matrix,
-    matrixStats
+    matrixStats,
+    plyranges,
+    sparseMatrixStats
 Remotes: 
-    caleblareau/easyLift,
-    sa-lee/plyranges,
-    const-ae/sparseMatrixStats
+    caleblareau/easyLift
 Suggests:
 VignetteBuilder: knitr
 
