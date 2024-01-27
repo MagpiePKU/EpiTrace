@@ -1,74 +1,1 @@
-Installation
-------------
-
-EpiTrace requires R 4.0 or later. The current recommended environment is R 4.1.3 .
-
-
-Install EpiTrace from Github_ using::
-
-    library(devtools)   
-    devtools::install_github('MagpiePKU/EpiTrace',dependencies=TRUE)  
-
-If you encountered any issue in installation, please let us know by flagging up an issue `here in Github <https://github.com/MagpiePKU/EpiTrace/issues/new>`_. 
-
-
-Dependencies
-^^^^^^^^^^^^
-
-- dplyr
-- tidyr
-- RColorBrewer
-- ggplot2
-- Seurat (>=4.0) 
-- Signac (>= 1.5.0)
-- GenomicRanges
-- plyranges (>= 1.0)
-- WGCNA (>= 1.7)
-- stringr
-- easyLift
-- parallel
-- sva
-- ccaPP
-- HiClimR
-- nnls
-- ggtree
-- ape
-- reticulate
-- ggpubr
-
-**Session info** from developer environment::
-
-	R version 4.2.0 (2022-04-22)
-	Platform: aarch64-apple-darwin20 (64-bit)
-	Running under: macOS 14.2
-
-	Matrix products: default
-	BLAS:   /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRblas.0.dylib
-	LAPACK: /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRlapack.dylib
-
-	locale:
-	[1] C/UTF-8/C/C/C/C
-	
-	attached base packages:
-	[1] parallel  stats4    stats     graphics  grDevices utils     datasets
-	[8] methods   base
-
-	other attached packages:
-	 [1] ggpubr_0.4.0          reticulate_1.25       ape_5.7-1
-	 [4] ggtree_3.4.0          nnls_1.4              HiClimR_2.2.1
-	 [7] ccaPP_0.3.3           robustbase_0.95-0     pcaPP_2.0-1
-	[10] sva_3.44.0            BiocParallel_1.30.2   genefilter_1.78.0
-	[13] mgcv_1.8-40           nlme_3.1-157          easyLift_0.2.1
-	[16] stringr_1.4.0         WGCNA_1.71            fastcluster_1.2.3
-	[19] dynamicTreeCut_1.63-1 plyranges_1.16.0      GenomicRanges_1.48.0
-	[22] GenomeInfoDb_1.34.9   IRanges_2.30.0        S4Vectors_0.34.0
-	[25] BiocGenerics_0.42.0   ggplot2_3.3.6         RColorBrewer_1.1-3
-	[28] tidyr_1.2.0           dplyr_1.1.4           Signac_1.6.0
-	[31] sp_1.4-7              SeuratObject_4.1.0    Seurat_4.1.1
-	[34] EpiTrace_0.0.0.9000
-
-
-Again, if you run into issues in installation or using, do not hesitate to approach us or raise a `GitHub issue`_.
-
-.. _Github: https://github.com/MagpiePKU/EpiTrace
-.. _`Github issue`: https://github.com/MagpiePKU/EpiTrace/issues/new
+Installation------------Requirements^^^^^^^^^^^^EpiTrace requires R 4.0 or later. The current recommended environment is R 4.1.3. You will need a **working compiler** and working internet connection in an environment where you can successfully install ``Seurat`` and ``Signac`` (most dependencies coming from Seurat). We have tested installation of EpiTrace in freshly-installed R-4.3.2 on MacOS with XCODE supplied ``clang``, and R-4.2.0 on Linux, using the following steps. **Installation on Windows has not been tested**. Simple install^^^^^^^^^^^^^^We recommend to install EpiTrace using ``pak``. It seems that ``pak`` handles dependencies hosted on different sources well.   Install EpiTrace from Github using::    if(!require(pak)){        install.packages("pak")    }    library(pak)       pak::pkg_install('caleblareau/easyLift')     pak::pkg_install('MagpiePKU/EpiTrace') If you encountered any issue in installation, please let us know by flagging up an issue `here in Github <https://github.com/MagpiePKU/EpiTrace/issues/new>`_. Dependencies^^^^^^^^^^^^- dplyr- tidyr- RColorBrewer- ggplot2- Seurat (>=4.0) - SeuratObject- Signac (>= 1.5.0)- GenomicRanges- plyranges (>= 1.0)- WGCNA (>= 1.7)- stringr- easyLift- parallel- nnls- ggtree- ape- reticulate- ggpubr- Matrix- matrixStats- sparseMatrixStats- plyrangesExample installation log^^^^^^^^^^^^^^^^^^^^^^^^Fresh installation on a newly installed R::     > pak::pkg_install('MagpiePKU/EpiTrace')        ✔ Updated metadata database: 2.86 MB in 8 files.    ✔ Updating metadata database ... done        → Will install 223 packages.    → Will update 1 package.    → Will download 203 CRAN packages (163.12 MB).    → Will download 21 packages with unknown size.    + AnnotationDbi              1.64.1     👷🏾 ⬇    + BH                         1.84.0-0   👷🏽‍♀️ ⬇ (14.02 MB)    + Biobase                    2.62.0     👷🏼‍♀️🔧 ⬇    + BiocGenerics               0.48.1     👷🏻 ⬇        ....        ℹ Packaging EpiTrace 0.0.1.3    ✔ Packaged EpiTrace 0.0.1.3 (5.9s)    ℹ Building EpiTrace 0.0.1.3    ✔ Built EpiTrace 0.0.1.3 (41.6s)    ✔ Installed EpiTrace 0.0.1.3 (github::MagpiePKU/EpiTrace@38d36a6) (251ms)    ✔ 1 pkg + 227 deps: kept 220, added 1, dld 1 (NA B) [1m 20.9s]Example session info^^^^^^^^^^^^^^^^^^^^**Developer environment**::      > sessionInfo()    	R version 4.2.0 (2022-04-22)    	Platform: aarch64-apple-darwin20 (64-bit)    	Running under: macOS 14.2        	Matrix products: default    	BLAS:   /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRblas.0.dylib    	LAPACK: /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRlapack.dylib        	locale:    	[1] C/UTF-8/C/C/C/C    	    	attached base packages:    	[1] parallel  stats4    stats     graphics  grDevices utils     datasets    	[8] methods   base        	other attached packages:    	 [1] ggpubr_0.4.0          reticulate_1.25       ape_5.7-1    	 [4] ggtree_3.4.0          nnls_1.4              HiClimR_2.2.1    	 [7] ccaPP_0.3.3           robustbase_0.95-0     pcaPP_2.0-1    	[10] sva_3.44.0            BiocParallel_1.30.2   genefilter_1.78.0    	[13] mgcv_1.8-40           nlme_3.1-157          easyLift_0.2.1    	[16] stringr_1.4.0         WGCNA_1.71            fastcluster_1.2.3    	[19] dynamicTreeCut_1.63-1 plyranges_1.16.0      GenomicRanges_1.48.0    	[22] GenomeInfoDb_1.34.9   IRanges_2.30.0        S4Vectors_0.34.0    	[25] BiocGenerics_0.42.0   ggplot2_3.3.6         RColorBrewer_1.1-3    	[28] tidyr_1.2.0           dplyr_1.1.4           Signac_1.6.0    	[31] sp_1.4-7              SeuratObject_4.1.0    Seurat_4.1.1    	[34] EpiTrace_0.0.0.9000**Tested installation environment**::    > sessionInfo()    R version 4.3.2 (2023-10-31)    Platform: aarch64-apple-darwin23.2.0 (64-bit)    Running under: macOS Sonoma 14.2        Matrix products: default    BLAS:   /Users/wing/Desktop/Eulerian/文件/内部研发项目/CLOCK_CANCER/Clock_Evolution/test_install/R-4.3.2/lib/libRblas.dylib    LAPACK: /Users/wing/Desktop/Eulerian/文件/内部研发项目/CLOCK_CANCER/Clock_Evolution/test_install/R-4.3.2/lib/libRlapack.dylib;  LAPACK version 3.11.0        locale:    [1] C/UTF-8/C/C/C/C        time zone: Asia/Shanghai    tzcode source: internal        attached base packages:    [1] stats     graphics  grDevices utils     datasets  methods   base        other attached packages:    [1] EpiTrace_0.0.1.3 pak_0.7.1        loaded via a namespace (and not attached):      [1] RcppAnnoy_0.0.22            splines_4.3.2      [3] later_1.3.2                 BiocIO_1.12.0      [5] ggplotify_0.1.2             bitops_1.0-7      [7] easyLift_0.2.1              tibble_3.2.1      [9] polyclip_1.10-6             preprocessCore_1.64.0     [11] rpart_4.1.21                XML_3.99-0.16.1     [13] fastDummies_1.7.3           lifecycle_1.0.4     [15] fastcluster_1.2.6           doParallel_1.0.17     [17] globals_0.16.2              lattice_0.21-9     [19] MASS_7.3-60                 backports_1.4.1     [21] magrittr_2.0.3              rmarkdown_2.25     [23] Hmisc_5.1-1                 plotly_4.10.4     [25] yaml_2.3.8                  httpuv_1.6.14     [27] Seurat_5.0.1                sctransform_0.4.1     [29] spam_2.10-0                 sp_2.1-2     [31] spatstat.sparse_3.0-3       reticulate_1.34.0     [33] cowplot_1.1.3               pbapply_1.7-2     [35] DBI_1.2.1                   RColorBrewer_1.1-3     [37] abind_1.4-5                 zlibbioc_1.48.0     [39] Rtsne_0.17                  GenomicRanges_1.54.1     [41] purrr_1.0.2                 BiocGenerics_0.48.1     [43] RCurl_1.98-1.14             yulab.utils_0.1.3     [45] nnet_7.3-19                 GenomeInfoDbData_1.2.11     [47] IRanges_2.36.0              S4Vectors_0.40.2     [49] ggrepel_0.9.5               irlba_2.3.5.1     [51] listenv_0.9.0               spatstat.utils_3.0-4     [53] tidytree_0.4.6              goftest_1.2-3     [55] RSpectra_0.16-1             spatstat.random_3.2-2     [57] fitdistrplus_1.1-11         parallelly_1.36.0     [59] leiden_0.4.3.1              codetools_0.2-19     [61] DelayedArray_0.28.0         RcppRoll_0.3.0     [63] tidyselect_1.2.0            aplot_0.2.2     [65] base64enc_0.1-3             matrixStats_1.2.0     [67] stats4_4.3.2                dynamicTreeCut_1.63-1     [69] spatstat.explore_3.2-5      GenomicAlignments_1.38.2     [71] jsonlite_1.8.8              Formula_1.2-5     [73] ellipsis_0.3.2              progressr_0.14.0     [75] ggridges_0.5.6              survival_3.5-7     [77] iterators_1.0.14            foreach_1.5.2     [79] tools_4.3.2                 treeio_1.26.0     [81] ica_1.0-3                   Rcpp_1.0.12     [83] glue_1.7.0                  gridExtra_2.3     [85] SparseArray_1.2.3           xfun_0.41     [87] MatrixGenerics_1.14.0       GenomeInfoDb_1.38.5     [89] dplyr_1.1.4                 fastmap_1.1.1     [91] fansi_1.0.6                 digest_0.6.34     [93] gridGraphics_0.5-1          R6_2.5.1     [95] mime_0.12                   colorspace_2.1-0     [97] scattermore_1.2             GO.db_3.18.0     [99] tensor_1.5                  RSQLite_2.3.5    [101] spatstat.data_3.0-4         utf8_1.2.4    [103] tidyr_1.3.1                 generics_0.1.3    [105] data.table_1.14.10          rtracklayer_1.62.0    [107] httr_1.4.7                  htmlwidgets_1.6.4    [109] S4Arrays_1.2.0              uwot_0.1.16    [111] pkgconfig_2.0.3             gtable_0.3.4    [113] blob_1.2.4                  impute_1.76.0    [115] lmtest_0.9-40               XVector_0.42.0    [117] htmltools_0.5.7             dotCall64_1.1-1    [119] plyranges_1.22.0            SeuratObject_5.0.1    [121] scales_1.3.0                Biobase_2.62.0    [123] png_0.1-8                   ggfun_0.1.4    [125] rstudioapi_0.15.0           knitr_1.45    [127] Signac_1.12.0               reshape2_1.4.4    [129] rjson_0.2.21                checkmate_2.3.1    [131] nlme_3.1-163                cachem_1.0.8    [133] zoo_1.8-12                  stringr_1.5.1    [135] KernSmooth_2.23-22          parallel_4.3.2    [137] miniUI_0.1.1.1              foreign_0.8-85    [139] AnnotationDbi_1.64.1        restfulr_0.0.15    [141] pillar_1.9.0                grid_4.3.2    [143] vctrs_0.6.5                 RANN_2.6.1    [145] promises_1.2.1              xtable_1.8-4    [147] cluster_2.1.4               htmlTable_2.4.2    [149] evaluate_0.23               cli_3.6.2    [151] compiler_4.3.2              Rsamtools_2.18.0    [153] rlang_1.1.3                 crayon_1.5.2    [155] future.apply_1.11.1         fs_1.6.3    [157] plyr_1.8.9                  stringi_1.8.3    [159] nnls_1.5                    viridisLite_0.4.2    [161] deldir_2.0-2                WGCNA_1.72-5    [163] BiocParallel_1.36.0         munsell_0.5.0    [165] Biostrings_2.70.1           lazyeval_0.2.2    [167] spatstat.geom_3.2-8         Matrix_1.6-5    [169] RcppHNSW_0.5.0              patchwork_1.2.0    [171] bit64_4.0.5                 future_1.33.1    [173] ggplot2_3.4.4               KEGGREST_1.42.0    [175] shiny_1.8.0                 SummarizedExperiment_1.32.0    [177] ROCR_1.0-11                 memoise_2.0.1    [179] igraph_1.6.0                ggtree_3.10.0    [181] fastmatch_1.1-4             bit_4.0.5    [183] ape_5.7-1Again, if you run into issues in installation or using, do not hesitate to approach us or raise a `GitHub issue`_... _Github: https://github.com/MagpiePKU/EpiTrace.. _`Github issue`: https://github.com/MagpiePKU/EpiTrace/issues/new

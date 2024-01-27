@@ -4,11 +4,23 @@
 Release Notes
 =============
 
+
+20240127
+''''''''
+Updated readthedocs introduction. 
+
+Removed unused dependencies for now.  
+
+
 20231011
 ''''''''
 Included G-quadruplex reference set:
+
+
 G-quadruplex (G4) harboring sites (pGQS) are provided for human (hg19), mouse (mm10), zebrafish (drerio10), fly (dm6), nematode (ce11) and yeast (sc3) genomes.
 Source of G4 regions: GSE110582 (mm10, dm6, ce11, sc3), GSE187007 (hg19), or G4Hunter prediction (drerio10).
+
+
 G4Hunter source: https://github.com/LacroixLaurent/G4HunterPaperGit
 
 
@@ -23,6 +35,8 @@ Added mouse ClockDML sites (from Zhou et al 2022, PMID 35873672) for mouse singl
 20220611
 ''''''''
 Added .rds files similar to the clock_gr_list data (for external loading).
+
+
 Added %ni% function (taken from ArchR).
 
 20220510
