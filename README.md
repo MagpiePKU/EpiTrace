@@ -13,7 +13,11 @@
 
 ### Installation
 ```
-library(devtools)   
-devtools::install_github('MagpiePKU/EpiTrace')    
+if(!require(pak)){
+    install.packages("pak")
+}
+library(pak)
+pak::pkg_install('caleblareau/easyLift')
+pak::pkg_install('MagpiePKU/EpiTrace')  
 ```
 
