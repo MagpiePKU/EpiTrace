@@ -112,6 +112,7 @@ Tutorial on (1) using G-quadruplex as reference clock-like loci, and (2) timing 
    Init_Peakset 
    Init_Matrix
    EpiTrace_prepare_object
+   EpiTraceAge
    RunEpiTraceAge
    EpiTraceAge_Convergence
    AssociationOfPeaksToAge

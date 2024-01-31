@@ -22,6 +22,9 @@ Input:
 - Z_cutoff: cutoff during iteration to select putative new clock-like loci. Defined as: include all loci with a scaled correlation coefficient peak x age > Z_cutoff. Usually set to 2~3. 
 - mean_error_limit: limit of mean sample age differences between iterations. If the difference is smaller than this, iteration stops early. 
 - iterative_time: maximal iteration time. 
+- normalization_method: choose between "randomized", "census", and "blank". Default to "randomized". 
+- select_minimal_percentage: minimal cell fraction that showing coverage on the selected peak. Default to 0.05. 
+- select_size_of_dispersion: number of peaks selected for computing the similarity matrix, ranked by dispersion. 
 
 
 Output: a Seurat object with ages annotated in its metadata. 
