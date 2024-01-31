@@ -436,7 +436,7 @@ EpiTraceAge <- function(mat,ncores=20,parallel=F,size=2000,batch=NULL,subsamples
       normalized_mat[is.na(normalized_mat)] <- 0
     }
     if(normalization_method == 'blank'){
-      normalized_mat <- log(normalized_mat+1,2)
+      normalized_mat <- log(mat+1,2)
       normalized_mat[is.na(normalized_mat)] <- 0
     }
     
@@ -627,8 +627,6 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 #' @export
 #' @examples
 
-
-
 EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50,lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":","-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), non_standard_clock = F, qualnum = 10,Z_cutoff = 3, mean_error_limit = 0.01, ncore_lim = 12, parallel = T,iterative_time = 2,remove_peaks_number=10,normalization_method='randomized'){
   norm_meth = normalization_method
   original_clk_peakset <- clock_gr
@@ -782,6 +780,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   return(epitrace_obj_iterative_age_estimated)
 }
 
+#' depreciated
 #' age_associated_peak_test: function for calculating age-peak correlation
 #' @title age_associated_peak_test
 #'
