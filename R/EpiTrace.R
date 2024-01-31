@@ -235,11 +235,18 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
 #' @details Note: SC/Bulk could not be run at the same time as the normalization/filtering process kills single cells in the face of bulk data
 #'
 #' @param epitrace_object a seurat object built by EpiTrace_prepare_object
+#' @param select_minimal_percentage: selecting peaks covered in > this fraction of cells to compute dispersion. Default to 0.05. Suggest not to change unless necessary.            
+#' @param select_size_of_dispersion: numbers of peaks selected for computing the similarity matrix, ranked by dispersion. Default to 3000. Suggest not to change unless necessary.
+#' @param ncores: cores used 
+#' @param subsamplesize: per subsampled batch cell number
+#' @param normalization_method: choose from "randomized", "census", and "blank"
+#' @param parallel: whether use parallel batch processing
+#' 
 #' @return a Seurat_Object with added meta.data columns EpiTraceAge_Mitotic, EpiTraceAge_Chronological, EpiTraceAge_all, Accessibility_Mitotic, Accessibility_Chronological, Accessibility_all. Where the 'Mitotic' corresponds to EpiTraceAge computed with mitosis-associated DML and 'Chronological' corresponds to non-mitosis, clock-like DML. 'all' is the EpiTraceAge computed by both sets.
 #' @export
 #' @examples
 
-RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=2000,normalization_method='randomized'){
+RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=2000,normalization_method='randomized',select_minimal_percentage = 0.05, select_size_of_dispersion = 3000){
   norm_meth = normalization_method
   availableAssays <- SeuratObject::Assays(epitrace_object)
   availableAssays_non_peak <- availableAssays[availableAssays!='peaks']
@@ -257,9 +264,9 @@ RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=20
     }else{
       message('Estimating Age by EpiTraceAge...')
       if(parallel==F){
-        EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0],normalization_method=norm_meth)
+        EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0],normalization_method=norm_meth,select_minimal_percentage=select_minimal_percentage,select_size_of_dispersion=select_size_of_dispersion)
       }else{
-        EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0],ncores = ncores,parallel=T,subsamplesize=subsamplesize,normalization_method=norm_meth)
+        EpiTraceAge(mat = testmtx[Matrix::rowSums(testmtx)>0,Matrix::colSums(testmtx)>0],ncores = ncores,parallel=T,subsamplesize=subsamplesize,normalization_method=norm_meth,select_minimal_percentage=select_minimal_percentage,select_size_of_dispersion=select_size_of_dispersion)
       }
     }
   }) -> res_list
@@ -621,13 +628,17 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 #' @param parallel whether use parallel multicore. In Rstudio, switch off to avoid problems
 #' @param iterative_time number of iterations. Usually >10 should be fine. 
 #' @param remove_peaks_number cut-off of peaks that should be removed with less that this many samples. Default = 10. If your object is too small (like bulk ATAC), try reduce this.
-#' @param normalization_method normalization method used in EpiTraceAge computation, choose between 'randomized', 'census', and 'blank'.                                                       
+#' @param normalization_method normalization method used in EpiTraceAge computation, choose between 'randomized', 'census', and 'blank'.    
+#' @param select_minimal_percentage: selecting peaks covered in > this fraction of cells to compute dispersion. Default to 0.05. Suggest not to change unless necessary.            
+#' @param select_size_of_dispersion: numbers of peaks selected for computing the similarity matrix, ranked by dispersion. Default to 3000. Suggest not to change unless necessary.
 #'
 #' @return a seurat object with EpiTraceAge, Accessibility, and AccessibilitySmoothed. '_iterative' are iteration scores, and '_Clock_initial' are initial clock scores. 
 #' @export
 #' @examples
 
-EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50,lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":","-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), non_standard_clock = F, qualnum = 10,Z_cutoff = 3, mean_error_limit = 0.01, ncore_lim = 12, parallel = T,iterative_time = 2,remove_peaks_number=10,normalization_method='randomized'){
+
+
+EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50,lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":","-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), non_standard_clock = F, qualnum = 10,Z_cutoff = 3, mean_error_limit = 0.01, ncore_lim = 12, parallel = T,iterative_time = 2,remove_peaks_number=10,normalization_method='randomized',select_minimal_percentage = 0.05, select_size_of_dispersion = 3000){
   norm_meth = normalization_method
   original_clk_peakset <- clock_gr
   if (ref_genome %in% "hg38") {
@@ -657,11 +668,11 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   epitrace_obj_original_metadata <- epitrace_obj@meta.data
   message("Estimating age for initialization...")
   if (parallel == F) {
-    epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj,normalization_method=norm_meth) %>%
+    epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj,normalization_method=norm_meth,select_minimal_percentage=select_minimal_percentage,select_size_of_dispersion=select_size_of_dispersion) %>%
       suppressMessages() %>% suppressWarnings()
   } else {
     epitrace_obj_age_estimated <- RunEpiTraceAge(epitrace_obj,
-                                                 ncores = ncore_lim, parallel = T,normalization_method=norm_meth) %>% suppressMessages() %>%
+                                                 ncores = ncore_lim, parallel = T,normalization_method=norm_meth,select_minimal_percentage=select_minimal_percentage,select_size_of_dispersion=select_size_of_dispersion) %>% suppressMessages() %>%
       suppressWarnings()
   }
   message("Finished age estimation")
@@ -736,13 +747,13 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
         }
       },error=function(e){batch_size=400})
       res1 <- EpiTraceAge(initial_matrix_clk, parallel = parallel,
-                          ncores = ncore_lim, size = batch_size, subsamplesize = batch_size,normalization_method=normalization_method) %>%
+                          ncores = ncore_lim, size = batch_size, subsamplesize = batch_size,normalization_method=normalization_method,select_minimal_percentage=select_minimal_percentage,select_size_of_dispersion=select_size_of_dispersion) %>%
         suppressMessages() %>% suppressWarnings()
     }
     else {
       message("Single thread run")
       res1 <- EpiTraceAge(initial_matrix_clk, parallel = F,
-                          ncores = 1,normalization_method=normalization_method) %>% suppressMessages() %>% suppressWarnings()
+                          ncores = 1,normalization_method=normalization_method,select_minimal_percentage=select_minimal_percentage,select_size_of_dispersion=select_size_of_dispersion) %>% suppressMessages() %>% suppressWarnings()
     }
     colnames(res1)[2:4] <- c("EpiTraceAge_iterative", "Accessibility_iterative",
                              "AccessibilitySmooth_iterative")
@@ -780,7 +791,6 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   return(epitrace_obj_iterative_age_estimated)
 }
 
-#' depreciated
 #' age_associated_peak_test: function for calculating age-peak correlation
 #' @title age_associated_peak_test
 #'
