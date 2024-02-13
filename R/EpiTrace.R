@@ -782,6 +782,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
     age_previous <- age_current
     epitrace_obj_iterative_age_estimated@misc$iterative_count <- iterative_count
     epitrace_obj_iterative_age_estimated@misc$mean_error <- mean_error
+    epitrace_obj_iterative_age_estimated@misc$next_ref_peak_size <- length(iterative_clock_gr_list$iterative)
     message("mean_error = ", mean_error)
     next_peakset <- iterative_clock_gr_list$iterative
   }
