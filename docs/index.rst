@@ -9,7 +9,7 @@ EpiTrace - Estimating cell age from single-cell ATAC data
 
 
 
-**EpiTrace** is an R package for estimating cell age from single-cell ATAC-seq data. It takes an approximation approach to infer the relative mitosis (replicative) age -- the number of mitosis a cell has undergone. It does so by measuring the total opened reference "clock-like" genomic loci. On these loci, heterogeneity of chromatin accessibility decreases as the cell ages. The chromatin accessibility-based mitosis age inferred by EpiTrace adds a time domain to the single-cell sequencing data. It complements somatic mutation, RNA velocity and stemness predictions to predict the cell evolution trajectory with improved precision and power :cite:p:`Xiao2022`. 
+**EpiTrace** is an R package for estimating cell age from single-cell ATAC-seq data. It takes an approximation approach to infer the relative mitosis (replicative) age -- the number of mitosis a cell has undergone. It does so by measuring the total opened reference "clock-like" genomic loci. On these loci, heterogeneity of chromatin accessibility decreases as the cell ages. The chromatin accessibility-based mitosis age inferred by EpiTrace adds a time domain to the single-cell sequencing data. It complements somatic mutation, RNA velocity and stemness predictions to predict the cell evolution trajectory with improved precision and power :cite:p:`Xiao2024`. 
 
 
 
@@ -36,16 +36,13 @@ If you use the *algorithm* and/or *ClockDML* (*clock-like differential methylate
 
 .. code-block:: bibtex
 
-    @article {Xiao2022.05.12.491736,
-	author = {Yu Xiao and Wan Jin and Lingao Ju and Jie Fu and Gang Wang and Mengxue Yu and Fangjin Chen and Kaiyu Qian and Xinghuan Wang and Yi Zhang},
-	title = {Tracking single cell evolution via clock-like chromatin accessibility},
-	elocation-id = {2022.05.12.491736},
+    @article {Xiao2024,
+	author = {Xiao, Yu and Jin, Wan and Ju, Lingao and Fu, Jie and Wang, Gang and Yu, Mengxue and Chen, Fangjin and Qian, Kaiyu and Wang, Xinghuan and Zhang, Yi},
+	title = {Tracking single-cell evolution using clock-like chromatin accessibility loci},
 	year = {2024},
-	doi = {10.1101/2022.05.12.491736},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2024/01/06/2022.05.12.491736},
-	eprint = {https://www.biorxiv.org/content/early/2024/01/06/2022.05.12.491736.full.pdf},
-	journal = {bioRxiv}}
+	doi = {10.1038/s41587-024-02241-z},
+	URL = {https://doi.org/10.1038/s41587-024-02241-z},
+	journal = {Nat Biotech}}
 
 
 **G-quadruplex region**

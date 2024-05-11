@@ -3,7 +3,7 @@ About EpiTrace
 
 Single cell chromatin accessibility sequencing (scATAC) reconstructs cell developmental trajectory by phenotypic similarity. However, inferring the exact developmental trajectory is challenging. While excellent tools such as RNA velocity, stemness prediction and metabolic labeling exist for determining the cell evolution trajectory on the manifold of phenotypes – usually described as Waddington’s landscape – for single cell RNA-seq datasets, no comparable methods exist for scATAC. State-of-the-art, similarity-based lineage deduction methods would be limited when phenotypes are fluidic, such as in dedifferentiation or oncogenesis. On the other hand, mutation-based lineage tracing methods, for example, using mitochondrial SNPs, which track the phylogeny of cells over divisions, are highly accurate, yet their temporal resolution is restrained by the low natural mutation rate.
 
-Introducing a time domain into these scATAC data would enable studying dynamic processes during development and aging. Such information, if exists, would likely to be intimately related cell replication :cite:p:`Hayflick1965`. Historically, epigenetic modification such as DNA methylation has been shown to be associated with biological age :cite:p:`Horvath2013` as well as mitosis :cite:p:`Youn2018`. In our work, we have identified that chromatin accessibility on certain genomic regions also exhibit clock-like behavior, such that the heterogeneity of chromatin accessibility on these regions reduces across mitosis. EpiTrace, described in :cite:p:`Xiao2022`, leverages this phenomenon to estimate single cell ages from a given set of reference clock-like region. 
+Introducing a time domain into these scATAC data would enable studying dynamic processes during development and aging. Such information, if exists, would likely to be intimately related cell replication :cite:p:`Hayflick1965`. Historically, epigenetic modification such as DNA methylation has been shown to be associated with biological age :cite:p:`Horvath2013` as well as mitosis :cite:p:`Youn2018`. In our work, we have identified that chromatin accessibility on certain genomic regions also exhibit clock-like behavior, such that the heterogeneity of chromatin accessibility on these regions reduces across mitosis. EpiTrace, described in :cite:p:`Xiao2024`, leverages this phenomenon to estimate single cell ages from a given set of reference clock-like region. 
 
 
 The replication-associated chromatin accessibility change
@@ -21,7 +21,7 @@ The phenotypic-neutral, reference clock-like loci
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The reference clock-like loci, as described earlier, is a set of genomic regions that shows clock-like chromatin accessibility. Namely, they undergo *irreversible* chromatin accessibility changes across mitosis. In other words, on a population scale, they either monotonically open or close during aging. Therefore, regardless of their initial state, the overall chromatin accessibility profile on them eventually converge into a defined state. Examples of such loci includes (1) the clock-like differentially methylated loci in human and mouse; (2) homologous region of clock-like differentially methylated loci in other species; and (3) putative G-quadruplex sequences. 
 
-On the single cell scale, reduction of global heterogeneity of chromatin accessibility across a set of reference genomic loci could be approximated by the fraction of opened reference loci :cite:p:`Xiao2022`. EpiTrace estimates this index by using HMM-mediated smoothing on a cell-to-cell similarity matrix (conceptually similar to :cite:p:`Gulati2020`). 
+On the single cell scale, reduction of global heterogeneity of chromatin accessibility across a set of reference genomic loci could be approximated by the fraction of opened reference loci :cite:p:`Xiao2024`. EpiTrace estimates this index by using HMM-mediated smoothing on a cell-to-cell similarity matrix (conceptually similar to :cite:p:`Gulati2020`). 
 
 
 Identifying cell-type-specific clock-like loci
@@ -40,4 +40,4 @@ For a particular cell lineage, the epigenomic shift during aging could be cell-t
 
 This process is iterated to update the reference loci until the estimated single cell age converges. In practice, we find ~10 iterations usually is sufficient to give satisfactory result. 
 
-See :cite:p:`Xiao2022` for a detailed exposition of the methods.
+See :cite:p:`Xiao2024` for a detailed exposition of the methods.
