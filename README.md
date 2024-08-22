@@ -21,14 +21,14 @@ pak::pkg_install('caleblareau/easyLift')
 pak::pkg_install('MagpiePKU/EpiTrace')  
 ```
 
-##### Development build
+##### Development build (use at your own risk!) 
 
 ```
 if(!require(pak)){
     install.packages("pak")
 }
 library(pak)
-pak::pkg_install('MagpiePKU/EpiTrace')  
+pak::pkg_install('MagpiePKU/EpiTrace@dev')  
 ```
 
 ### Citation
