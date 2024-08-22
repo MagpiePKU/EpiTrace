@@ -21,6 +21,16 @@ pak::pkg_install('caleblareau/easyLift')
 pak::pkg_install('MagpiePKU/EpiTrace')  
 ```
 
+##### Development build
+
+```
+if(!require(pak)){
+    install.packages("pak")
+}
+library(pak)
+pak::pkg_install('MagpiePKU/EpiTrace')  
+```
+
 ### Citation
 Xiao, Y., Jin, W., Ju, L. et al. Tracking single-cell evolution using clock-like chromatin accessibility loci. Nat Biotechnol (2024). https://doi.org/10.1038/s41587-024-02241-z
 
