@@ -17,7 +17,7 @@ if(!require(pak)){
     install.packages("pak")
 }
 library(pak)
-pak::pkg_install('MagpiePKU/EpiTrace')  
+pak::pkg_install('MagpiePKU/EpiTrace@dev')  
 ```
 
 ### Citation
