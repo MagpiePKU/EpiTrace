@@ -26,15 +26,13 @@ Imports:
     stringr,
     parallel,
     nnls,
-    ggtree,
     ape,
     ggpubr,
     Matrix,
     matrixStats,
     plyranges,
+    easylift, 
     sparseMatrixStats
-Remotes: 
-    caleblareau/easyLift
 Suggests:
 VignetteBuilder: knitr
 
