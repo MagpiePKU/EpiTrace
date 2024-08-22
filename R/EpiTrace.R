@@ -91,6 +91,10 @@ Init_Matrix <- function(cellname,peakname,matrix){
 #' @return a seurat object with all input peaks, as well as assays named 'x' for each clock set.
 #' @export
 
+## mod: change GitHub package easyLift to Bioconductor easylift. 20240823
+## https://github.com/MagpiePKU/EpiTrace/issues/7
+
+
 EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,lsi_dim=2:50,fn.k.param=21,ref_genome='hg38',sep_string= c(":", "-"),clock_gr_list=clock_gr_list,non_standard_clock=F,qualnum=10,run_reduction=T,remove_peaks_number=10){
   
   # 0. try error catch
@@ -152,8 +156,13 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   Overlap_Input_with_Clock(peakSet_generanges=peakSet,clock_gr_list=clock_gr_list,ref=ref_genome) -> overlap_result
   overlap_list_of_list <- overlap_result$overlap_list_of_list
   if(standard_clock & (ref_genome %in% 'hg38')){
-    clock_gr_list[['Mitosis']] %>% easyLift::easyLiftOver('hg19_hg38') -> mitosis_gr
-    clock_gr_list[['Chronology']] %>% easyLift::easyLiftOver('hg19_hg38') -> chronology_gr
+    chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
+    genome(clock_gr_list[['Mitosis']]) <- 'hg19'
+    genome(clock_gr_list[['Chronology']]) <- 'hg19'
+    easylift::easylift(clock_gr_list[['Mitosis']], "hg38", chain)  -> mitosis_gr
+    easylift::easylift(clock_gr_list[['Chronology']], "hg38", chain)  -> chronology_gr
+    # clock_gr_list[['Mitosis']] %>% easyLift::easyLiftOver('hg19_hg38') -> mitosis_gr
+    # clock_gr_list[['Chronology']] %>% easyLift::easyLiftOver('hg19_hg38') -> chronology_gr
     plyranges::bind_ranges(mitosis_gr,chronology_gr) %>% reduce()  -> target_clock_gr
     result_clock_gr_list <- list('MitosisClock'=mitosis_gr,'ChronologyClock'=chronology_gr,'AllClock'=target_clock_gr)
   }
@@ -303,6 +312,10 @@ RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=20
 #' @examples
 #'
 
+## mod: 20240823. For update, remove ggtree dependency since there's few instances to use this in the main function. 
+## most install problems may be due to ggtree. 
+## https://github.com/MagpiePKU/EpiTrace/issues/2
+
 RunEpiTracePhylogeny <- function(epitrace_object,min.cutoff=50,run_reduction=T){
   availableAssays <- SeuratObject::Assays(epitrace_object)
   epitrace_object$cell <- rownames(epitrace_object@meta.data)
@@ -320,10 +333,11 @@ RunEpiTracePhylogeny <- function(epitrace_object,min.cutoff=50,run_reduction=T){
       }
       obj_clock <- BuildClusterTree(object = epitrace_object,verbose = T,assay = assayid)
       data.tree_clock <- Tool(object = obj_clock, slot = "BuildClusterTree")
-      ggtree::ggtree(data.tree_clock,layout='rectangular',ladderize = FALSE)  + geom_tiplab(aes(color=label),size=5,offset=10) + scale_color_manual(values=color_celltype)  -> tree_plot_clock
-      xmax <- (tree_plot_clock$data$`branch.length` %>% max(na.rm=T)) * 1.4
-      tree_plot_clock <- tree_plot_clock + xlim(c(NA,xmax))
-      result <- list(assay=assayid,tree=data.tree_clock,tree_plot=tree_plot_clock)
+      # ggtree::ggtree(data.tree_clock,layout='rectangular',ladderize = FALSE)  + geom_tiplab(aes(color=label),size=5,offset=10) + scale_color_manual(values=color_celltype)  -> tree_plot_clock
+      # xmax <- (tree_plot_clock$data$`branch.length` %>% max(na.rm=T)) * 1.4
+      # tree_plot_clock <- tree_plot_clock + xlim(c(NA,xmax))
+      # result <- list(assay=assayid,tree=data.tree_clock,tree_plot=tree_plot_clock)
+      result <- list(assay=assayid,tree=data.tree_clock)
       return(result)
     },error=function(e){message('failed for ',assayid)})
   }) -> returnlist
@@ -347,13 +361,19 @@ RunEpiTracePhylogeny <- function(epitrace_object,min.cutoff=50,run_reduction=T){
 #' @examples Overlap_Input_with_Clock(peakSet_generanges=test_Peakset,clock_gr_list=clock_gr_list,ref='hg38')
 #'
 
+## mod: change GitHub package easyLift to Bioconductor easylift. 20240823
+## https://github.com/MagpiePKU/EpiTrace/issues/7
+
 Overlap_Input_with_Clock <- function(peakSet_generanges,clock_gr_list=clock_gr_list,ref=ref){
   if(ref %in% 'hg19'){
     # do nothing
   }
   if(ref %in% 'hg38'){
     lapply(names(clock_gr_list),function(x){
-      easyLift::easyLiftOver(clock_gr_list[[x]],'hg19_hg38') -> temp
+      chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
+      genome(clock_gr_list[[x]]) <- 'hg19'
+      easylift::easylift(clock_gr_list[[x]], "hg38", chain)  -> temp
+      # easyLift::easyLiftOver(clock_gr_list[[x]],'hg19_hg38') -> temp
       return(temp)
     }) -> clock_gr_list_new
     names(clock_gr_list_new) <- names(clock_gr_list)
@@ -636,13 +656,17 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 #' @export
 #' @examples
 
-
+## mod: change GitHub package easyLift to Bioconductor easylift. 20240823
+## https://github.com/MagpiePKU/EpiTrace/issues/7
 
 EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50,lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":","-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), non_standard_clock = F, qualnum = 10,Z_cutoff = 3, mean_error_limit = 0.01, ncore_lim = 12, parallel = T,iterative_time = 2,remove_peaks_number=10,normalization_method='randomized',select_minimal_percentage = 0.05, select_size_of_dispersion = 3000){
   norm_meth = normalization_method
   original_clk_peakset <- clock_gr
   if (ref_genome %in% "hg38") {
-    original_clk_peakset <- easyLift::easyLiftOver(original_clk_peakset,
+      chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
+      genome(original_clk_peakset) <- 'hg19'
+      easylift::easylift(original_clk_peakset, "hg38", chain)  -> original_clk_peakset
+    # original_clk_peakset <- easyLift::easyLiftOver(original_clk_peakset,
                                                    "hg19_hg38")
   }
   if (ref_genome != "hg19" & ref_genome != "hg38") {
