@@ -119,7 +119,7 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
       message('ref clock list is said to be standard but actually not')
       stop()
     }else{
-      message('ref clock list is set to be standard (Homo sapiens, hg19)')
+      message('Reference clock list is not converted. Default standard clock reference loci is Homo sapiens hg19. If given clock_gr_list is non-human, then it is not converted and follows user's definition. Please make sure that both clock_gr_list and the peakSet are from similar reference genome.')
       standard_clock = T
     }
   }else{
