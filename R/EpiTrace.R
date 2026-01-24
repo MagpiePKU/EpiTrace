@@ -804,7 +804,9 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
     age_current <- epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative
     cell_current <- epitrace_obj_iterative_age_estimated$cell[!is.na(epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative)]
     names(age_current) <- cell_current
-    error <- (age_current - age_previous[cell_current])
+    # Align vectors to avoid mismatch warning
+    common_cells <- intersect(names(age_current), names(age_previous))
+    error <- (age_current[common_cells] - age_previous[common_cells])
     tryCatch({
       error[is.infinite(error)] <- 0
     }, error = function(e) {
