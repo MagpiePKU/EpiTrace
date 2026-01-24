@@ -191,8 +191,12 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   overlap_list_of_list <- overlap_result$overlap_list_of_list
   if(standard_clock & (ref_genome %in% 'hg38')){
     chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
-    clock_gr_list[['Mitosis']] %>% easylift::easylift(to='hg38', chain=chain) -> mitosis_gr
-    clock_gr_list[['Chronology']] %>% easylift::easylift(to='hg38', chain=chain) -> chronology_gr
+    mitosis_gr <- clock_gr_list[['Mitosis']]
+    GenomeInfoDb::genome(mitosis_gr) <- "hg19"
+    mitosis_gr %>% easylift::easylift(to='hg38', chain=chain) -> mitosis_gr
+    chronology_gr <- clock_gr_list[['Chronology']]
+    GenomeInfoDb::genome(chronology_gr) <- "hg19"
+    chronology_gr %>% easylift::easylift(to='hg38', chain=chain) -> chronology_gr
     plyranges::bind_ranges(mitosis_gr,chronology_gr) %>% reduce()  -> target_clock_gr
     result_clock_gr_list <- list('MitosisClock'=mitosis_gr,'ChronologyClock'=chronology_gr,'AllClock'=target_clock_gr)
   }
@@ -292,7 +296,7 @@ RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=20
   epitrace_object$cell <- rownames(epitrace_object@meta.data)
   mtx_list <- lapply(availableAssays_non_peak,function(x){
     DefaultAssay(epitrace_object) <- x
-    Seurat::GetAssayData(epitrace_object,slot='data')
+    Seurat::GetAssayData(epitrace_object,layer='data')
   })
   names(mtx_list) <- availableAssays_non_peak
   lapply(names(mtx_list),function(x){
@@ -394,7 +398,7 @@ PlotEpiTracePhylogeny <- function(phylogeny_result, assay_name = NULL){
   tip_colors <- color_map[tree$tip.label]
 
   # Plot using ape
-  ape::plot.phylo(tree, type = "rectangular", ladderize = FALSE,
+  ape::plot.phylo(tree, type = "phylogram", ladderize = FALSE,
                   tip.color = tip_colors, cex = 0.8)
   ape::tiplabels()
   title(main = paste("EpiTrace Phylogeny -", assay_name))
@@ -423,7 +427,9 @@ Overlap_Input_with_Clock <- function(peakSet_generanges,clock_gr_list=clock_gr_l
   if(ref %in% 'hg38'){
     chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
     lapply(names(clock_gr_list),function(x){
-      easylift::easylift(clock_gr_list[[x]], to='hg38', chain=chain) -> temp
+      gr <- clock_gr_list[[x]]
+      GenomeInfoDb::genome(gr) <- "hg19"
+      easylift::easylift(gr, to='hg38', chain=chain) -> temp
       return(temp)
     }) -> clock_gr_list_new
     names(clock_gr_list_new) <- names(clock_gr_list)
@@ -632,7 +638,7 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
   if(DefaultAssay(epitrace_object)!=peakSetName){
     DefaultAssay(epitrace_object) <- peakSetName
   }
-  Seurat::GetAssayData(epitrace_object,slot='data') -> peaks_PT_dat
+  Seurat::GetAssayData(epitrace_object,layer='data') -> peaks_PT_dat
   if(is.null(epitrace_age_vector)){
     epitrace_age_vector <- epitrace_object@meta.data[,epitrace_age_name] %>% as.numeric()
   }
@@ -713,6 +719,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   original_clk_peakset <- clock_gr
   if (ref_genome == "hg38") {
     chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
+    GenomeInfoDb::genome(original_clk_peakset) <- "hg19"
     original_clk_peakset <- easylift::easylift(original_clk_peakset,
                                                    to="hg38", chain=chain)
   }
