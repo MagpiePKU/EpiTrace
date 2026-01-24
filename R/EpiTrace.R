@@ -641,7 +641,7 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50,lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":","-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), non_standard_clock = F, qualnum = 10,Z_cutoff = 3, mean_error_limit = 0.01, ncore_lim = 12, parallel = T,iterative_time = 2,remove_peaks_number=10,normalization_method='randomized',select_minimal_percentage = 0.05, select_size_of_dispersion = 3000){
   norm_meth = normalization_method
   original_clk_peakset <- clock_gr
-  if (ref_genome %in% "hg38") {
+  if (ref_genome == "hg38") {
     original_clk_peakset <- easyLift::easyLiftOver(original_clk_peakset,
                                                    "hg19_hg38")
   }
