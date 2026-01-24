@@ -190,8 +190,9 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   Overlap_Input_with_Clock(peakSet_generanges=peakSet,clock_gr_list=clock_gr_list,ref=ref_genome) -> overlap_result
   overlap_list_of_list <- overlap_result$overlap_list_of_list
   if(standard_clock & (ref_genome %in% 'hg38')){
-    clock_gr_list[['Mitosis']] %>% easylift::liftOver('hg19_hg38') -> mitosis_gr
-    clock_gr_list[['Chronology']] %>% easylift::liftOver('hg19_hg38') -> chronology_gr
+    chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
+    clock_gr_list[['Mitosis']] %>% easylift::easylift(to='hg38', chain=chain) -> mitosis_gr
+    clock_gr_list[['Chronology']] %>% easylift::easylift(to='hg38', chain=chain) -> chronology_gr
     plyranges::bind_ranges(mitosis_gr,chronology_gr) %>% reduce()  -> target_clock_gr
     result_clock_gr_list <- list('MitosisClock'=mitosis_gr,'ChronologyClock'=chronology_gr,'AllClock'=target_clock_gr)
   }
@@ -420,8 +421,9 @@ Overlap_Input_with_Clock <- function(peakSet_generanges,clock_gr_list=clock_gr_l
     # do nothing
   }
   if(ref %in% 'hg38'){
+    chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
     lapply(names(clock_gr_list),function(x){
-      easylift::liftOver(clock_gr_list[[x]],'hg19_hg38') -> temp
+      easylift::easylift(clock_gr_list[[x]], to='hg38', chain=chain) -> temp
       return(temp)
     }) -> clock_gr_list_new
     names(clock_gr_list_new) <- names(clock_gr_list)
@@ -710,8 +712,9 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   norm_meth = normalization_method
   original_clk_peakset <- clock_gr
   if (ref_genome == "hg38") {
-    original_clk_peakset <- easylift::liftOver(original_clk_peakset,
-                                                   "hg19_hg38")
+    chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
+    original_clk_peakset <- easylift::easylift(original_clk_peakset,
+                                                   to="hg38", chain=chain)
   }
   if (ref_genome != "hg19" & ref_genome != "hg38") {
     message("please make double sure your ref genome, peak set and cells are similar.")
