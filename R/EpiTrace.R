@@ -660,7 +660,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   initial_peakSet_clk <- peakSet[overlap_with_clk, ]
   message("Preparing obj...")
   epitrace_obj <- EpiTrace_prepare_object(initial_peakSet_clk,
-                                          initial_matrix_clk, celltype, ref_genome = "hg19", non_standard_clock = T,
+                                          initial_matrix_clk, celltype, ref_genome = ref_genome, non_standard_clock = T,
                                           clock_gr_list = iterative_GR_list, sep_string = sep_string,
                                           fn.k.param = fn.k.param, lsi_dim = lsi_dim, qualnum = qualnum,
                                           min.cutoff = min.cutoff, run_reduction = F,remove_peaks_number=remove_peaks_number)
