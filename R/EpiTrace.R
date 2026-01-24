@@ -249,20 +249,20 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
     tempdf <- Seurat::RunUMAP(object = tempdf, reduction = 'lsi', dims = lsi_dim)
     tempdf <- Seurat::FindNeighbors(object = tempdf, reduction = 'lsi', dims = lsi_dim,k.param = fn.k.param)
     tempdf <- Seurat::FindClusters(object = tempdf, verbose = FALSE, algorithm = 3)
-    
-    # define identity
-    tempdf@meta.data %>% rownames -> final_cells
-    if(!is.null(celltype)){
-      tempdf@meta.data$celltype <- celltype[final_cells]
-      Idents(tempdf) <- celltype[final_cells]
-    }else{
+  }
+
+  # define identity (common for both run_reduction cases)
+  tempdf@meta.data %>% rownames -> final_cells
+  if(!is.null(celltype)){
+    tempdf@meta.data$celltype <- celltype[final_cells]
+    Idents(tempdf) <- celltype[final_cells]
+  }else{
+    if(run_reduction==T){
       tempdf@meta.data$celltype <- tempdf@meta.data$seurat_clusters
       Idents(tempdf) <- tempdf$seurat_clusters
-    }
-  }else{
-    if(!is.null(celltype)){
-      tempdf@meta.data$celltype <- celltype[final_cells]
-      Idents(tempdf) <- celltype[final_cells]
+    }else{
+      tempdf@meta.data$celltype <- 'unlabeled'
+      Idents(tempdf) <- rep('unlabeled', nrow(tempdf@meta.data))
     }
   }
   
