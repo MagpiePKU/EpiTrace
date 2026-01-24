@@ -67,6 +67,44 @@ Init_Matrix <- function(cellname,peakname,matrix){
   return(matrix)
 }
 
+#' CreateChromatinAssayOffline: Create ChromatinAssay with offline support
+#' @title CreateChromatinAssayOffline
+#'
+#' @description Wrapper for Signac::CreateChromatinAssay that handles offline mode
+#' when UCSC download is unavailable
+#'
+#' @param matrix Input count matrix
+#' @param sep_string Separator string for peak names
+#' @param ref_genome Reference genome ('hg19' or 'hg38')
+#' @param peakSet GRanges object for peaks
+#'
+#' @return ChromatinAssay object
+#' @keywords internal
+
+CreateChromatinAssayOffline <- function(matrix, sep_string, ref_genome, peakSet) {
+  tryCatch({
+    # Try online first (with UCSC download)
+    Signac::CreateChromatinAssay(matrix, sep = sep_string,
+                                 genome = ref_genome, ranges = peakSet)
+  }, error = function(e) {
+    if (grepl("download.file|URL", conditionMessage(e))) {
+      message("Cannot download seqinfo from UCSC. Using offline mode.")
+      # Create minimal Seqinfo manually
+      seqnames <- unique(GenomicRanges::seqnames(peakSet))
+      seqinfo <- GenomeInfoDb::Seqinfo(
+        seqnames = seqnames,
+        seqlengths = rep(NA, length(seqnames)),
+        isCircular = rep(FALSE, length(seqnames)),
+        genome = ref_genome
+      )
+      Signac::CreateChromatinAssay(matrix, sep = sep_string,
+                                   genome = seqinfo, ranges = peakSet)
+    } else {
+      stop(e)
+    }
+  })
+}
+
 
 #' EpiTrace_prepare_object: wrapper function for preparing input data matrix for EpiTrace.
 #' @title EpiTrace_prepare_object
@@ -152,8 +190,13 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
   Overlap_Input_with_Clock(peakSet_generanges=peakSet,clock_gr_list=clock_gr_list,ref=ref_genome) -> overlap_result
   overlap_list_of_list <- overlap_result$overlap_list_of_list
   if(standard_clock & (ref_genome %in% 'hg38')){
-    clock_gr_list[['Mitosis']] %>% easyLift::easyLiftOver('hg19_hg38') -> mitosis_gr
-    clock_gr_list[['Chronology']] %>% easyLift::easyLiftOver('hg19_hg38') -> chronology_gr
+    chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
+    mitosis_gr <- clock_gr_list[['Mitosis']]
+    GenomeInfoDb::genome(mitosis_gr) <- "hg19"
+    mitosis_gr %>% easylift::easylift(to='hg38', chain=chain) -> mitosis_gr
+    chronology_gr <- clock_gr_list[['Chronology']]
+    GenomeInfoDb::genome(chronology_gr) <- "hg19"
+    chronology_gr %>% easylift::easylift(to='hg38', chain=chain) -> chronology_gr
     plyranges::bind_ranges(mitosis_gr,chronology_gr) %>% reduce()  -> target_clock_gr
     result_clock_gr_list <- list('MitosisClock'=mitosis_gr,'ChronologyClock'=chronology_gr,'AllClock'=target_clock_gr)
   }
@@ -167,9 +210,9 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
     result_clock_gr_list <- clock_gr_list
   }
   
-  # 2. prepare the chromatin assay with Signac
-  Signac::CreateChromatinAssay(matrix, sep = sep_string,
-                               genome = ref_genome,ranges=peakSet) -> chrom_assay
+  # 2. prepare the chromatin assay with Signac (with offline support)
+  CreateChromatinAssayOffline(matrix, sep = sep_string,
+                               ref_genome = ref_genome, peakSet = peakSet) -> chrom_assay
   # 3. prepare the Seurat object
   tempdf <- Seurat::CreateSeuratObject(
     counts = chrom_assay,
@@ -206,20 +249,20 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
     tempdf <- Seurat::RunUMAP(object = tempdf, reduction = 'lsi', dims = lsi_dim)
     tempdf <- Seurat::FindNeighbors(object = tempdf, reduction = 'lsi', dims = lsi_dim,k.param = fn.k.param)
     tempdf <- Seurat::FindClusters(object = tempdf, verbose = FALSE, algorithm = 3)
-    
-    # define identity
-    tempdf@meta.data %>% rownames -> final_cells
-    if(!is.null(celltype)){
-      tempdf@meta.data$celltype <- celltype[final_cells]
-      Idents(tempdf) <- celltype[final_cells]
-    }else{
+  }
+
+  # define identity (common for both run_reduction cases)
+  tempdf@meta.data %>% rownames -> final_cells
+  if(!is.null(celltype)){
+    tempdf@meta.data$celltype <- celltype[final_cells]
+    Idents(tempdf) <- celltype[final_cells]
+  }else{
+    if(run_reduction==T){
       tempdf@meta.data$celltype <- tempdf@meta.data$seurat_clusters
       Idents(tempdf) <- tempdf$seurat_clusters
-    }
-  }else{
-    if(!is.null(celltype)){
-      tempdf@meta.data$celltype <- celltype[final_cells]
-      Idents(tempdf) <- celltype[final_cells]
+    }else{
+      tempdf@meta.data$celltype <- 'unlabeled'
+      Idents(tempdf) <- rep('unlabeled', nrow(tempdf@meta.data))
     }
   }
   
@@ -253,7 +296,7 @@ RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=20
   epitrace_object$cell <- rownames(epitrace_object@meta.data)
   mtx_list <- lapply(availableAssays_non_peak,function(x){
     DefaultAssay(epitrace_object) <- x
-    Seurat::GetAssayData(epitrace_object,slot='data')
+    Seurat::GetAssayData(epitrace_object,layer='data')
   })
   names(mtx_list) <- availableAssays_non_peak
   lapply(names(mtx_list),function(x){
@@ -298,7 +341,7 @@ RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=20
 #'
 #' @param epitrace_object a seurat object prepared by EpiTrace_prepare_object
 #' @param min.cutoff min.cutoff used in Signac::FindTopFeatures analysis, during re-selecting the clock variable features
-#' @return a list, in which each element corresponds to a clock dataset in the original object. Each element is a list: clock = the name of clockDML set, tree = phylogenetic tree for 'clusters of cells' defined by the given 'idents' of the input seurat object, and tree_plot = a ggtree plot of the tree.
+#' @return a list, in which each element corresponds to a clock dataset in the original object. Each element is a list: clock = the name of clockDML set, tree = phylogenetic tree for 'clusters of cells' defined by the given 'idents' of the input seurat object.
 #' @export
 #' @examples
 #'
@@ -320,15 +363,45 @@ RunEpiTracePhylogeny <- function(epitrace_object,min.cutoff=50,run_reduction=T){
       }
       obj_clock <- BuildClusterTree(object = epitrace_object,verbose = T,assay = assayid)
       data.tree_clock <- Tool(object = obj_clock, slot = "BuildClusterTree")
-      ggtree::ggtree(data.tree_clock,layout='rectangular',ladderize = FALSE)  + geom_tiplab(aes(color=label),size=5,offset=10) + scale_color_manual(values=color_celltype)  -> tree_plot_clock
-      xmax <- (tree_plot_clock$data$`branch.length` %>% max(na.rm=T)) * 1.4
-      tree_plot_clock <- tree_plot_clock + xlim(c(NA,xmax))
-      result <- list(assay=assayid,tree=data.tree_clock,tree_plot=tree_plot_clock)
+      # Store color mapping for plotting
+      result <- list(assay=assayid,tree=data.tree_clock,color_map=color_celltype)
       return(result)
     },error=function(e){message('failed for ',assayid)})
   }) -> returnlist
   names(returnlist) <- availableAssays
   return(returnlist)
+}
+
+#' PlotEpiTracePhylogeny: Plot phylogenetic tree from EpiTracePhylogeny result
+#' @title PlotEpiTracePhylogeny
+#'
+#' @description Plot phylogenetic tree using base R graphics (ape package)
+#'
+#' @details PlotEpiTracePhylogeny(phylogeny_result, assay_name = NULL)
+#'
+#' @param phylogeny_result Result from RunEpiTracePhylogeny
+#' @param assay_name Name of assay to plot (if NULL, plots first available)
+#' @return Invisible NULL (plots are displayed)
+#' @export
+#' @examples
+#'
+
+PlotEpiTracePhylogeny <- function(phylogeny_result, assay_name = NULL){
+  if(is.null(assay_name)){
+    assay_name <- names(phylogeny_result)[1]
+  }
+  result <- phylogeny_result[[assay_name]]
+  tree <- result$tree
+  color_map <- result$color_map
+
+  # Set up plot colors for tips based on cell types
+  tip_colors <- color_map[tree$tip.label]
+
+  # Plot using ape
+  ape::plot.phylo(tree, type = "phylogram", ladderize = FALSE,
+                  tip.color = tip_colors, cex = 0.8)
+  ape::tiplabels()
+  title(main = paste("EpiTrace Phylogeny -", assay_name))
 }
 
 #' Overlap_Input_with_Clock: function for overlapping the input peak set object to clockDML for EpiTrace.
@@ -352,8 +425,11 @@ Overlap_Input_with_Clock <- function(peakSet_generanges,clock_gr_list=clock_gr_l
     # do nothing
   }
   if(ref %in% 'hg38'){
+    chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
     lapply(names(clock_gr_list),function(x){
-      easyLift::easyLiftOver(clock_gr_list[[x]],'hg19_hg38') -> temp
+      gr <- clock_gr_list[[x]]
+      GenomeInfoDb::genome(gr) <- "hg19"
+      easylift::easylift(gr, to='hg38', chain=chain) -> temp
       return(temp)
     }) -> clock_gr_list_new
     names(clock_gr_list_new) <- names(clock_gr_list)
@@ -562,7 +638,7 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
   if(DefaultAssay(epitrace_object)!=peakSetName){
     DefaultAssay(epitrace_object) <- peakSetName
   }
-  Seurat::GetAssayData(epitrace_object,slot='data') -> peaks_PT_dat
+  Seurat::GetAssayData(epitrace_object,layer='data') -> peaks_PT_dat
   if(is.null(epitrace_age_vector)){
     epitrace_age_vector <- epitrace_object@meta.data[,epitrace_age_name] %>% as.numeric()
   }
@@ -641,9 +717,11 @@ AssociationOfPeaksToAge <- function(epitrace_object,peakSetName='peaks',epitrace
 EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutoff = 50,lsi_dim = 2:50, fn.k.param = 21, ref_genome = "hg38", sep_string = c(":","-"), clock_gr = plyranges::reduce_ranges(c(clock_gr_list[[1]],clock_gr_list[[2]])), non_standard_clock = F, qualnum = 10,Z_cutoff = 3, mean_error_limit = 0.01, ncore_lim = 12, parallel = T,iterative_time = 2,remove_peaks_number=10,normalization_method='randomized',select_minimal_percentage = 0.05, select_size_of_dispersion = 3000){
   norm_meth = normalization_method
   original_clk_peakset <- clock_gr
-  if (ref_genome %in% "hg38") {
-    original_clk_peakset <- easyLift::easyLiftOver(original_clk_peakset,
-                                                   "hg19_hg38")
+  if (ref_genome == "hg38") {
+    chain <- system.file("extdata", "hg19ToHg38.over.chain.gz", package = "easylift")
+    GenomeInfoDb::genome(original_clk_peakset) <- "hg19"
+    original_clk_peakset <- easylift::easylift(original_clk_peakset,
+                                                   to="hg38", chain=chain)
   }
   if (ref_genome != "hg19" & ref_genome != "hg38") {
     message("please make double sure your ref genome, peak set and cells are similar.")
@@ -660,7 +738,7 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
   initial_peakSet_clk <- peakSet[overlap_with_clk, ]
   message("Preparing obj...")
   epitrace_obj <- EpiTrace_prepare_object(initial_peakSet_clk,
-                                          initial_matrix_clk, celltype, ref_genome = "hg19", non_standard_clock = T,
+                                          initial_matrix_clk, celltype, ref_genome = ref_genome, non_standard_clock = T,
                                           clock_gr_list = iterative_GR_list, sep_string = sep_string,
                                           fn.k.param = fn.k.param, lsi_dim = lsi_dim, qualnum = qualnum,
                                           min.cutoff = min.cutoff, run_reduction = F,remove_peaks_number=remove_peaks_number)
@@ -766,7 +844,9 @@ EpiTraceAge_Convergence <- function (peakSet, matrix, celltype = NULL, min.cutof
     age_current <- epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative
     cell_current <- epitrace_obj_iterative_age_estimated$cell[!is.na(epitrace_obj_iterative_age_estimated$EpiTraceAge_iterative)]
     names(age_current) <- cell_current
-    error <- (age_current - age_previous[cell_current])
+    # Align vectors to avoid mismatch warning
+    common_cells <- intersect(names(age_current), names(age_previous))
+    error <- (age_current[common_cells] - age_previous[common_cells])
     tryCatch({
       error[is.infinite(error)] <- 0
     }, error = function(e) {
