@@ -12,7 +12,8 @@
  Maintainer: Zhang Yi <c.sinensis@gmail.com>      
 
 ### Installation
-```
+
+```r
 if(!require(pak)){
     install.packages("pak")
 }
@@ -20,14 +21,50 @@ library(pak)
 pak::pkg_install('MagpiePKU/EpiTrace')
 ```
 
-##### Development build (use at your own risk!) 
+##### Development build (use at your own risk!)
 
-```
+```r
 if(!require(pak)){
     install.packages("pak")
 }
 library(pak)
-pak::pkg_install('MagpiePKU/EpiTrace@dev')  
+pak::pkg_install('MagpiePKU/EpiTrace@dev')
+```
+
+### System Requirements
+
+**R Version**: >= 4.3.0
+
+**Key Dependencies**:
+- Seurat (>= 4.0)
+- SeuratObject
+- Signac (>= 1.5.0)
+- easylift (Bioconductor) - for genome liftover
+- ape - for phylogeny visualization (replaces ggtree)
+- WGCNA (>= 1.7)
+- GenomicRanges
+- ggplot2
+
+**Full dependency list**: See [DESCRIPTION](DESCRIPTION)
+
+**Platform**: Tested on macOS (ARM64/x86_64) and Linux
+
+### Session Info
+
+For reproducibility, here's a typical session info for EpiTrace v0.0.2.0:
+
+```r
+R version 4.4.2 (2024-10-31)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 22.04.4 LTS
+
+Other attached packages:
+- EpiTrace_0.0.2.0
+- Seurat_5.4.0
+- Signac_1.16.0
+- easylift_1.7.0
+- ape_5.8
+- GenomicRanges_1.58.0
 ```
 
 ### Changelog / Recent Updates
