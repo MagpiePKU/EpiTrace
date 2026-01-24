@@ -336,7 +336,7 @@ RunEpiTraceAge <- function(epitrace_object,parallel=F,ncores=20,subsamplesize=20
 #'
 #' @param epitrace_object a seurat object prepared by EpiTrace_prepare_object
 #' @param min.cutoff min.cutoff used in Signac::FindTopFeatures analysis, during re-selecting the clock variable features
-#' @return a list, in which each element corresponds to a clock dataset in the original object. Each element is a list: clock = the name of clockDML set, tree = phylogenetic tree for 'clusters of cells' defined by the given 'idents' of the input seurat object, and tree_plot = a ggtree plot of the tree.
+#' @return a list, in which each element corresponds to a clock dataset in the original object. Each element is a list: clock = the name of clockDML set, tree = phylogenetic tree for 'clusters of cells' defined by the given 'idents' of the input seurat object.
 #' @export
 #' @examples
 #'
@@ -358,15 +358,45 @@ RunEpiTracePhylogeny <- function(epitrace_object,min.cutoff=50,run_reduction=T){
       }
       obj_clock <- BuildClusterTree(object = epitrace_object,verbose = T,assay = assayid)
       data.tree_clock <- Tool(object = obj_clock, slot = "BuildClusterTree")
-      ggtree::ggtree(data.tree_clock,layout='rectangular',ladderize = FALSE)  + geom_tiplab(aes(color=label),size=5,offset=10) + scale_color_manual(values=color_celltype)  -> tree_plot_clock
-      xmax <- (tree_plot_clock$data$`branch.length` %>% max(na.rm=T)) * 1.4
-      tree_plot_clock <- tree_plot_clock + xlim(c(NA,xmax))
-      result <- list(assay=assayid,tree=data.tree_clock,tree_plot=tree_plot_clock)
+      # Store color mapping for plotting
+      result <- list(assay=assayid,tree=data.tree_clock,color_map=color_celltype)
       return(result)
     },error=function(e){message('failed for ',assayid)})
   }) -> returnlist
   names(returnlist) <- availableAssays
   return(returnlist)
+}
+
+#' PlotEpiTracePhylogeny: Plot phylogenetic tree from EpiTracePhylogeny result
+#' @title PlotEpiTracePhylogeny
+#'
+#' @description Plot phylogenetic tree using base R graphics (ape package)
+#'
+#' @details PlotEpiTracePhylogeny(phylogeny_result, assay_name = NULL)
+#'
+#' @param phylogeny_result Result from RunEpiTracePhylogeny
+#' @param assay_name Name of assay to plot (if NULL, plots first available)
+#' @return Invisible NULL (plots are displayed)
+#' @export
+#' @examples
+#'
+
+PlotEpiTracePhylogeny <- function(phylogeny_result, assay_name = NULL){
+  if(is.null(assay_name)){
+    assay_name <- names(phylogeny_result)[1]
+  }
+  result <- phylogeny_result[[assay_name]]
+  tree <- result$tree
+  color_map <- result$color_map
+
+  # Set up plot colors for tips based on cell types
+  tip_colors <- color_map[tree$tip.label]
+
+  # Plot using ape
+  ape::plot.phylo(tree, type = "rectangular", ladderize = FALSE,
+                  tip.color = tip_colors, cex = 0.8)
+  ape::tiplabels()
+  title(main = paste("EpiTrace Phylogeny -", assay_name))
 }
 
 #' Overlap_Input_with_Clock: function for overlapping the input peak set object to clockDML for EpiTrace.
