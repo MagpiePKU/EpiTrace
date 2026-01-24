@@ -84,6 +84,8 @@ Tutorial on (1) using G-quadruplex as reference clock-like loci, and (2) timing 
    about
    installation
    release_notes
+   interpreting_epitrace_age
+   clock_reference_options
    using_notes
    references
 
