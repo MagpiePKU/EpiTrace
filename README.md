@@ -31,19 +31,48 @@ library(pak)
 pak::pkg_install('MagpiePKU/EpiTrace@dev')
 ```
 
+### ⚠️ Breaking Changes from v0.0.1
+
+**NOT BACKWARDS COMPATIBLE with v0.0.1.x**
+
+**Major API changes**:
+- **Seurat v4 → v5**: EpiTrace now requires Seurat v5 (>= 5.0.0)
+  - `GetAssayData(slot='data')` → `GetAssayData(layer='data')`
+  - UMAP computation now uses UWOT (R package) instead of reticulate + Python
+  - Some Seurat v4 workflows may need adjustments
+
+**Removed dependencies**:
+- ~~`ggtree`~~ → Use `ape::plot.phylo` instead for phylogeny
+- ~~`easyLift`~~ → Use Bioconductor `easylift` instead for liftover
+
+**If you're using EpiTrace v0.0.1**, you may need to update your code:
+```r
+# Old (v0.0.1)
+library(ggtree)
+plot <- ggtree(tree) + geom_tiplab()
+
+# New (v0.0.2)
+library(ape)
+PlotEpiTracePhylogeny(phylo_result)  # New helper function
+```
+
 ### System Requirements
 
-**R Version**: >= 4.3.0
+**R Version**: >= 4.3.0 (recommended: >= 4.4.0)
 
-**Key Dependencies**:
-- Seurat (>= 4.0)
-- SeuratObject
-- Signac (>= 1.5.0)
-- easylift (Bioconductor) - for genome liftover
-- ape - for phylogeny visualization (replaces ggtree)
-- WGCNA (>= 1.7)
-- GenomicRanges
-- ggplot2
+**Key Dependencies** (updated in v0.0.2.0):
+- **Seurat (>= 5.0.0)** ⚠️ Major upgrade from v4
+- **SeuratObject** (Seurat v5)
+- **Signac (>= 1.5.0)**
+- **easylift** (Bioconductor) - NEW: replaces easyLift for liftover
+- **ape** - NEW: replaces ggtree for phylogeny visualization
+- **WGCNA (>= 1.7)**
+- **GenomicRanges**
+- **ggplot2**
+- **dplyr**, **tidyr**, **RColorBrewer**
+- **Matrix**, **matrixStats**, **sparseMatrixStats**
+- **plyranges**
+- **nnls**
 
 **Full dependency list**: See [DESCRIPTION](DESCRIPTION)
 
@@ -51,21 +80,37 @@ pak::pkg_install('MagpiePKU/EpiTrace@dev')
 
 ### Session Info
 
-For reproducibility, here's a typical session info for EpiTrace v0.0.2.0:
+For reproducibility, here's the complete session info for EpiTrace v0.0.2.0:
 
 ```r
 R version 4.4.2 (2024-10-31)
 Platform: x86_64-pc-linux-gnu
 Running under: Ubuntu 22.04.4 LTS
 
-Other attached packages:
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/liblapack.so.3
+
+Attached packages:
 - EpiTrace_0.0.2.0
-- Seurat_5.4.0
+- Seurat_5.4.0              ⚠️ UPGRADED from v4.x
+- SeuratObject_5.3.0         ⚠️ NEW in v5.x
 - Signac_1.16.0
-- easylift_1.7.0
-- ape_5.8
+- easylift_1.7.0             ⚠️ NEW (replaces easyLift)
+- ape_5.8                    ⚠️ NEW (replaces ggtree)
+- WGCNA_1.73
 - GenomicRanges_1.58.0
+- ggplot2_3.5.1
+- dplyr_1.1.4
 ```
+
+**Key changes from previous versions**:
+| Package | v0.0.1 | v0.0.2 | Breaking Change? |
+|---------|--------|--------|------------------|
+| Seurat  | v4.x    | v5.x   | ⚠️ YES - Major API changes |
+| ggtree  | Used    | Removed | ⚠️ YES - Use `ape` instead |
+| easyLift| Used    | Removed | ⚠️ YES - Use `easylift` instead |
+| ape     | Optional| Required| ⚠️ YES - Now required |
 
 ### Changelog / Recent Updates
 
