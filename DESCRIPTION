@@ -31,9 +31,8 @@ Imports:
     Matrix,
     matrixStats,
     plyranges,
-    sparseMatrixStats
-Remotes: 
-    caleblareau/easyLift
+    sparseMatrixStats,
+    easylift
 Suggests:
 VignetteBuilder: knitr
 
