@@ -67,6 +67,44 @@ Init_Matrix <- function(cellname,peakname,matrix){
   return(matrix)
 }
 
+#' CreateChromatinAssayOffline: Create ChromatinAssay with offline support
+#' @title CreateChromatinAssayOffline
+#'
+#' @description Wrapper for Signac::CreateChromatinAssay that handles offline mode
+#' when UCSC download is unavailable
+#'
+#' @param matrix Input count matrix
+#' @param sep_string Separator string for peak names
+#' @param ref_genome Reference genome ('hg19' or 'hg38')
+#' @param peakSet GRanges object for peaks
+#'
+#' @return ChromatinAssay object
+#' @keywords internal
+
+CreateChromatinAssayOffline <- function(matrix, sep_string, ref_genome, peakSet) {
+  tryCatch({
+    # Try online first (with UCSC download)
+    Signac::CreateChromatinAssay(matrix, sep = sep_string,
+                                 genome = ref_genome, ranges = peakSet)
+  }, error = function(e) {
+    if (grepl("download.file|URL", conditionMessage(e))) {
+      message("Cannot download seqinfo from UCSC. Using offline mode.")
+      # Create minimal Seqinfo manually
+      seqnames <- unique(GenomicRanges::seqnames(peakSet))
+      seqinfo <- GenomeInfoDb::Seqinfo(
+        seqnames = seqnames,
+        seqlengths = rep(NA, length(seqnames)),
+        isCircular = rep(FALSE, length(seqnames)),
+        genome = ref_genome
+      )
+      Signac::CreateChromatinAssay(matrix, sep = sep_string,
+                                   genome = seqinfo, ranges = peakSet)
+    } else {
+      stop(e)
+    }
+  })
+}
+
 
 #' EpiTrace_prepare_object: wrapper function for preparing input data matrix for EpiTrace.
 #' @title EpiTrace_prepare_object
@@ -167,9 +205,9 @@ EpiTrace_prepare_object <- function(peakSet,matrix,celltype=NULL,min.cutoff=50,l
     result_clock_gr_list <- clock_gr_list
   }
   
-  # 2. prepare the chromatin assay with Signac
-  Signac::CreateChromatinAssay(matrix, sep = sep_string,
-                               genome = ref_genome,ranges=peakSet) -> chrom_assay
+  # 2. prepare the chromatin assay with Signac (with offline support)
+  CreateChromatinAssayOffline(matrix, sep = sep_string,
+                               ref_genome = ref_genome, peakSet = peakSet) -> chrom_assay
   # 3. prepare the Seurat object
   tempdf <- Seurat::CreateSeuratObject(
     counts = chrom_assay,
