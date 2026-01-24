@@ -2,8 +2,8 @@ Package: EpiTrace
 Type: Package
 Title: Cell age and lineage inference from single cell ATAC data
 Version: 0.0.2.0
-Author: Yi Zhang <synapse@pku.edu.cn>
-Maintainer: Yi Zhang <synapse@pku.edu.cn>
+Author: Yi Zhang <zhangyi@cimrbj.ac.cn>
+Maintainer: Yi Zhang <zhangyi@cimrbj.ac.cn>
 Description: Inference of cell age and phylogeny from single cell ATAC data.  
     The package does:
     1. calculate the age of a cell or a cluster of cell; 

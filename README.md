@@ -9,7 +9,7 @@
  
  For descriptions, function references, and tutorials, visit https://epitrace.readthedocs.io 
 
- Maintainer: Zhang Yi <c.sinensis@gmail.com>      
+ Maintainer: Zhang Yi <zhangyi@cimrbj.ac.cn>      
 
 ### Installation
 
