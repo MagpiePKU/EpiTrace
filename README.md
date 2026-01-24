@@ -17,8 +17,7 @@ if(!require(pak)){
     install.packages("pak")
 }
 library(pak)
-pak::pkg_install('caleblareau/easyLift')
-pak::pkg_install('MagpiePKU/EpiTrace')  
+pak::pkg_install('MagpiePKU/EpiTrace')
 ```
 
 ##### Development build (use at your own risk!) 
@@ -30,6 +29,27 @@ if(!require(pak)){
 library(pak)
 pak::pkg_install('MagpiePKU/EpiTrace@dev')  
 ```
+
+### Changelog / Recent Updates
+
+#### Version 0.0.2 (dev_2 branch)
+Major bug fixes and improvements:
+
+1. **Issue #15**: Fixed parse error - changed `%in%` to `==` for scalar ref_genome comparison
+2. **Issue #12**: Removed hardcoded hg19 in `EpiTraceAge_Convergence` - now properly propagates ref_genome parameter
+3. **Issue #3**: Added offline mode support - package now works without UCSC internet access
+4. **Issue #19**: Fixed vector mismatch warning in age calculation by aligning vectors with `intersect()`
+5. **ggtree removal**: Replaced with `ape::plot.phylo` for reduced dependencies
+6. **easyLift → easylift**: Migrated from GitHub to Bioconductor for maintained package
+7. **Chain file support**: Integrated built-in chain files from Bioconductor easylift
+8. **Seurat v5 compatibility**: Updated deprecated `slot` parameter to `layer` in `GetAssayData`
+9. **run_reduction fix**: Fixed `final_cells` undefined bug when `run_reduction=FALSE`
+
+**Dependencies Updated**:
+- Removed: `ggtree` (use `ape` instead)
+- Removed: `easyLift` (GitHub, unmaintained)
+- Added: `easylift` (Bioconductor, maintained)
+- Updated: Seurat v5 API compatibility
 
 ### Citation
 Xiao, Y., Jin, W., Ju, L. et al. Tracking single-cell evolution using clock-like chromatin accessibility loci. Nat Biotechnol (2024). https://doi.org/10.1038/s41587-024-02241-z
