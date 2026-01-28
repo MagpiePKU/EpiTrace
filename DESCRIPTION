@@ -1,7 +1,7 @@
 Package: EpiTrace
 Type: Package
-Title: Cell age and lineage inference from single cell ATAC data
-Version: 0.0.2.0
+Title: Cell Age and Lineage Inference from Single Cell ATAC Data
+Version: 0.0.2.1
 Author: Yi Zhang <zhangyi@cimrbj.ac.cn>
 Maintainer: Yi Zhang <zhangyi@cimrbj.ac.cn>
 Description: Inference of cell age and phylogeny from single cell ATAC data.  
@@ -32,7 +32,6 @@ Imports:
     matrixStats,
     plyranges,
     sparseMatrixStats,
-    easylift
-Suggests:
-VignetteBuilder: knitr
+    easylift,
+    ggtree
 
